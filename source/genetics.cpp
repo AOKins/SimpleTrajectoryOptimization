@@ -1,5 +1,5 @@
-#include "../headers/coords.h"
-#include "../headers/individual.h"
+#include "../headers/coords.cuh"
+#include "../headers/individual.cuh"
 #include "../headers/options.h"
 
 

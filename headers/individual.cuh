@@ -1,7 +1,7 @@
 #ifndef _INDIVIDUAL_H_
 #define _INDIVIDUAL_H_
 
-#include "coords.h"
+#include "coords.cuh"
 #include "options.h"
 #include <math.h>
 #include <random>
@@ -36,7 +36,7 @@ struct individual {
         this->velocity.x = this->V_nought * sin(this->theta) * cos(this->phi);
         this->velocity.y = this->V_nought * sin(this->theta) * sin(this->phi);
         this->velocity.z = this->V_nought * cos(this->theta);
-        this->cost = 99999999.99; // Initial set to a really bad cost that needs to be updated when a simulated trajectory is complete
+        this->cost = 999999999999; // Initial set to a really bad cost that needs to be updated when a simulated trajectory is complete
     }
 
     individual(double set_phi, double set_theta, double set_V, double set_time) {
@@ -59,7 +59,7 @@ struct individual {
     }
 
     // Updates and returns this individual's cost
-    double determineCost(data3D targetLoc) {
+    __host__ __device__ double determineCost(data3D targetLoc) {
         this->cost = sqrt( pow(this->position.x-targetLoc.x , 2) + pow(this->position.y-targetLoc.y ,2) + pow(this->position.z-targetLoc.z ,2));
         return this->cost;
     }

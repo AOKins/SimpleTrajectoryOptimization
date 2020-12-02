@@ -6,13 +6,13 @@
 struct data3D {
     double x,y,z;
     // Default constructor, sets all elements to zero
-    data3D() {
+    __host__ __device__ data3D() {
         this->x = 0;
         this->y = 0;
         this->z = 0;
     }
     // Constructor that takes in values to set
-    data3D(double setX, double setY, double setZ) {
+    __host__ __device__ data3D(double setX, double setY, double setZ) {
         this->x = setX;
         this->y = setY;
         this->z = setZ;

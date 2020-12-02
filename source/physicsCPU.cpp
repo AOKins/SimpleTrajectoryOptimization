@@ -1,6 +1,6 @@
 #include "../headers/options.h"
-#include "../headers/coords.h"
-#include "../headers/individual.h"
+#include "../headers/coords.cuh"
+#include "../headers/individual.cuh"
 
 // File that contains CPU version of physics simulation calculations to serve as baseline comparison before creating CUDA alternative implementation
 
@@ -10,8 +10,8 @@
 //        objectVel - used in getting the net speed that impacts the resulting forces
 // Output: data3D object that contains the acceleration due to the atmosphere in all 3 components
 data3D calculateAtmosphere(const options &constants, data3D objectPos, data3D objectVel) {
-    data3D result(0,0,0);
-    data3D netSpeed(0,0,0);
+    data3D result;
+    data3D netSpeed;
     // Get the net/relative speed of the object which depends on wind
     netSpeed.x = (objectVel.x - constants.windcomponents.x);
     netSpeed.y = (objectVel.y - constants.windcomponents.y);
@@ -30,7 +30,7 @@ data3D calculateAtmosphere(const options &constants, data3D objectPos, data3D ob
 //        objectPos - currently unused, but may have implementation to simulate change in gravity dependent on object's height
 // Output: data3D object that contains the acceleration due to gravity in all 3 components (though only y is expected to have non-zero value)
 data3D calculateGravity(const options &constants, data3D objectPos) {
-    data3D result(0,0,0);
+    data3D result;
     result.z = -constants.gravityAccel;
     return result;
 }
@@ -43,7 +43,7 @@ void update(const options& constants, individual * object) {
     data3D atm_accel = calculateAtmosphere(constants, object->position, object->velocity);
     data3D grav_accel = calculateGravity(constants, object->position);
     // Get the net acceleration being acted on the object
-    data3D net_accel(0,0,0);
+    data3D net_accel;
     net_accel.x = atm_accel.x + grav_accel.x;
     net_accel.y = atm_accel.y + grav_accel.y;
     net_accel.z = atm_accel.z + grav_accel.z;

@@ -20,7 +20,6 @@ void options::readFile(std::string filePath) {
             if (line != "" && ( line.find("//") != 0 )) {
                 int equals_pivot = line.find("="); // Get index to where the equal sign is
                 int end_point = line.find_first_of(" "); // Get index to where the first space is (assuming no spaces from variable name through to end of assignment of value)
-
                 // Get the variable and what it is assigning
                 std::string variableName = line.substr(0, equals_pivot   );
                 std::string variableValue = line.substr( equals_pivot + 1, end_point - equals_pivot - 1);
@@ -76,8 +75,11 @@ void options::readFile(std::string filePath) {
                 else if (variableName == "max_time") {
                     this->max_time = std::stod(variableValue);
                 }
+                else if (variableName == "max_generations") {
+                    this->max_generations = std::stod(variableValue);
+                }
                 else if (variableName == "rng_seed") { // If the conifguration sets time_seed to NONE then time_seed is set to time(0) 
-                    if (variableValue != "NONE" || variableValue != "") {
+                    if (variableValue != "NONE") {
                         // If variableValue is not NONE or empty, assumption is that it is a valid double value that can be converted and used
                         this->rng_seed = std::stod(variableValue);
                     }
@@ -121,5 +123,6 @@ std::ostream& operator<<(std::ostream& os, const options object) {
     os << "Simulation Settings\n";
     os << "\tTime Step Size: " << object.time_stepSize << " s\tDistance Tolerance: " << object.distance_tol << " m\n";
     os << "\tRNG Seed: " << object.rng_seed << std::endl;
+    os << "\tPopulation Size: " << object.pop_size << "\tMax_generations: " << object.max_generations << std::endl;
     return os;
 }

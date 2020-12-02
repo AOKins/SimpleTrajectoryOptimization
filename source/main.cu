@@ -2,9 +2,10 @@
 #include <string>
 #include <random>
 #include "../headers/options.h"
-#include "../headers/individual.h"
-#include "../headers/coords.h"
-#include "physics.cpp"
+#include "../headers/individual.cuh"
+#include "../headers/coords.cuh"
+#include "physicsCPU.cpp"
+#include "device.cu"
 
 // For phase 2 (genetic algorithm introduction)
 //      Implement CUDA kernal to perform population
@@ -21,18 +22,21 @@
 //      Add more configurable options to allow for more customized objectives
 //          Ideas include consideration for terrain
 
-void geneticAlgorithm(options constants) {
+void geneticAlgorithm(options * constants) {
 
     // Initializing the seed
-    std::mt19937_64 randomGen(constants.rng_seed);
+    std::mt19937_64 randomGen(constants->rng_seed);
 
-
+    
     // Initializing the pool with random individuals
-    individual * pool = (individual*)malloc(sizeof(individual) * constants.pop_size);
-    for (int i = 0; i < constants.pop_size; i++) {
-        pool[i] = individual(constants, randomGen);
+    individual * pool = (individual*)malloc(sizeof(individual) * constants->pop_size);
+    for (int i = 0; i < constants->pop_size; i++) {
+        pool[i] = individual(*constants, randomGen);
     }
-    double currentGen = 0;
+//    double currentGen = 0;
+    callGPU(pool, constants);
+
+    //  
     /*
     do {
         // Perform the kernal
@@ -41,7 +45,7 @@ void geneticAlgorithm(options constants) {
     } while (pool[0].cost > constants.distance_tol || max_generations > currentGen);
     
     */
-
+    std::cout <<"Exiting program...";
     delete [] pool;
 }
 
@@ -50,8 +54,9 @@ void geneticAlgorithm(options constants) {
 
 int main(int argc, char *argv[]) { // main.exe input.config <- command to run program with file path to config file being "input.config"
 
-    options config(argv[1]);
-    std::cout << config;
-
+    options * config = new options(argv[1]);
+    std::cout << *config;
+    
     geneticAlgorithm(config);
+    delete config;
 }

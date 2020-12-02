@@ -1,7 +1,7 @@
 #ifndef _OPTIONS_H_
 #define _OPTIONS_H_
 
-#include "coords.h"
+#include "coords.cuh"
 #include <string>
 
 struct options {
@@ -25,6 +25,8 @@ struct options {
     double max_time;
 
     int pop_size;
+
+    double max_generations;
 
     options(std::string filePath);
     void readFile(std::string filePath);
