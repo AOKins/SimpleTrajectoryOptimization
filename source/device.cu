@@ -49,10 +49,6 @@ __global__ void simulateGPU(options * constants, individual * pool) {
     individual local_cpy = pool[tid];
     // Iterate for each time step until the total triptime is reached
 
-
-    if (tid == 0) {
-        printf("%f, %f", pool[0].time, constants->time_stepSize);
-    }
     for (double c_time = 0; c_time < local_cpy.time; c_time += constants->time_stepSize) {
             updateGPU(*constants, local_cpy);
         
@@ -62,27 +58,32 @@ __global__ void simulateGPU(options * constants, individual * pool) {
     pool[tid] = local_cpy;    
 }
 
-
+// Kernal caller to manage memory and values needed before calling it
+// Input: h_pool - pointer to individual array that holds the individual parameters needing to be computed with
+//        h_constants - pointer to options struct that contains the constants needed related to the program
 __host__ void callGPU(individual * h_pool, options * h_constants) {
+    // Get properties of the gpu to display and also so we could use the maxThreadsPerBlock property
     cudaDeviceProp * properties = new cudaDeviceProp;
     cudaGetDeviceProperties(properties,0);
     std::cout <<"GPU Properties (" << properties->name << " detected)\n";
     std::cout << "\tMaxThreadsPerBlock: " << properties->maxThreadsPerBlock << "\n"; 
+    // Holds how many blocks to use for the kernal to cover the entire pool, assuming that pop_size is divisible by maxThreadsPerBlock
     int numBlocksUsed = h_constants->pop_size / properties->maxThreadsPerBlock;
     std::cout << "\tBlocks being used: " << numBlocksUsed << "\n";
 
+    // Store the number of bytes the pool array is and use when managing memory for CUDA
     size_t poolMemSize = sizeof(individual)*h_constants->pop_size;
+
+    // Allocate and copy over memory into the device
     individual * d_pool;
     cudaMalloc(&d_pool, poolMemSize);
     cudaMemcpy(d_pool, h_pool, poolMemSize, cudaMemcpyHostToDevice);
-
-    std::cout << "\n\tPool copied\n";
 
     options * d_constants;
     cudaMalloc(&d_constants, sizeof(options));
     cudaMemcpy(d_constants, h_constants, sizeof(options), cudaMemcpyHostToDevice);
     
-    std::cout << "\tConstants copied\n";
+    // Create and use cudaEvents to sync with and record the outcome
     cudaEvent_t begin, end;
     cudaEventCreate(&begin);
     cudaEventCreate(&end);
@@ -91,13 +92,12 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     simulateGPU <<<properties->maxThreadsPerBlock, numBlocksUsed>>> (d_constants, d_pool);
     cudaEventRecord(end);
 
-    std::cout << "\tWaiting on GPU\n";
     cudaEventSynchronize(end);
-    std::cout << "\tsimulateGPU ended\n";
-    
+
+    // Copy results of the pool into host memory
     cudaMemcpy(h_pool, d_pool, poolMemSize, cudaMemcpyDeviceToHost);
 
+    // Free resources from device before ending function
     cudaFree(d_constants);
     cudaFree(d_pool);
-    std::cout << "callGPU finished\n";
 }

@@ -24,8 +24,8 @@ struct individual {
 
     // Constructor that takes constants and rng generator to create a randomized individual (position still 0 0 0 and velocity based on phi/theta)
     individual(options constants, std::mt19937_64 & rngEng ) {
-        this->phi = fmod(rngEng(), PI/2);
-        this->theta = fmod(rngEng(), 2*PI);
+        this->phi = fmod(rngEng(), 2*PI);
+        this->theta = fmod(rngEng(), PI/2);
         this->V_nought = fmod(rngEng(), constants.max_launch_v - constants.min_launch_v) + constants.min_launch_v;
 
         this->time = fmod(rngEng(), constants.max_time - constants.min_time) + constants.min_time;
@@ -64,6 +64,9 @@ struct individual {
         return this->cost;
     }
 };
-// Need overloaded comparison operators
+
+bool operator<(const individual &ind1, const individual &ind2) {
+    return ind1.cost < ind2.cost;
+}
 
 #endif
