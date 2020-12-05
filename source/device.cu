@@ -51,7 +51,6 @@ __global__ void simulateGPU(options * constants, individual * pool) {
 
     for (double c_time = 0; c_time < local_cpy.time; c_time += constants->time_stepSize) {
             updateGPU(*constants, local_cpy);
-        
     }
     // Trajectory completed, evaluate cost
     local_cpy.determineCost(constants->target_Loc);

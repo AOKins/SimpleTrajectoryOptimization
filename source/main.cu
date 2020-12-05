@@ -7,25 +7,12 @@
 #include "physicsCPU.cpp"
 #include "device.cu"
 
-// For phase 2 (genetic algorithm introduction)
-//      Implement Genetic sorting, crossover, and mutation
-//      Implement Genetic algorithm to handle iterative loop
 
-// For phase 3 (polishing initial goals)
-//      Reach validation for efficient, consistent, and accurate solutions
-//      Documententation and readability at this point is a must
-//      Initial objectives reached
-
-// For phase 4 (expanded goals)
-//      Implement more in-depth and precise simulation of atmosphere and gravity factors
-//      Add more configurable options to allow for more customized objectives
-//          Ideas include consideration for terrain
 
 void geneticAlgorithm(options * constants) {
 
     // Initializing the seed
     std::mt19937_64 randomGen(constants->rng_seed);
-
     
     // Initializing the pool with random individuals
     individual * pool = (individual*)malloc(sizeof(individual) * (constants->pop_size+1));
