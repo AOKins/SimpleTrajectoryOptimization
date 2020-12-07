@@ -22,8 +22,20 @@ struct individual {
     data3D velocity; // Initially equal to components of V_nought in the 3 dimensions (using inplaneAngle and outplaneAngle to get values), updated over time in the simulation
     double cost; // Holds the cost (desirability) of the individual, smaller is better
 
+    __host__ __device__ individual() {
+        this->phi = 0;
+        this->theta = 0;
+        this->V_nought = 0;
+        this->time = 0;
+        this->position = data3D(0,0,0);
+        this->velocity.x = 0;
+        this->velocity.y = 0;
+        this->velocity.z = 0;
+        this->cost = 999999999999; // Initial set to a really bad cost that needs to be updated when a simulated trajectory is complete
+    }
+
     // Constructor that takes constants and rng generator to create a randomized individual (position still 0 0 0 and velocity based on phi/theta)
-    __host__ __device__ individual(options constants, std::mt19937_64 & rngEng ) {
+    __host__  individual(options constants, std::mt19937_64 & rngEng ) {
         this->phi = fmod(rngEng(), 2*PI);
         this->theta = fmod(rngEng(), PI/2);
         this->V_nought = fmod(rngEng(), constants.max_launch_v - constants.min_launch_v) + constants.min_launch_v;
@@ -39,7 +51,7 @@ struct individual {
         this->cost = 999999999999; // Initial set to a really bad cost that needs to be updated when a simulated trajectory is complete
     }
 
-    individual(double set_phi, double set_theta, double set_V, double set_time) {
+    __host__ __device__ individual(double set_phi, double set_theta, double set_V, double set_time) {
         // For setting the angles, performing a mod on them to keep the values within set bounds
         // Without mod, individuals overtime could have large values that could be described by more readable/usable coterminal angles instead due to mutations and crossover
         // Phi is set within range of 0 (vertical) to 90 degrees (horizontal)

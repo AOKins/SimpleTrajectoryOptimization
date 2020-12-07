@@ -8,7 +8,8 @@
 #include "device.cu"
 
 
-
+// CPU version (should put in own seperate file later)
+/*
 void geneticAlgorithm(options * constants) {
 
     // Initializing the seed
@@ -34,9 +35,10 @@ void geneticAlgorithm(options * constants) {
     } while (pool[0].cost > constants.distance_tol || max_generations > currentGen);
     // Output resulting solution
 
-    */
+    
     delete [] pool;
 }
+*/
 
 
 
@@ -45,9 +47,10 @@ int main(int argc, char *argv[]) { // main.exe input.config <- command to run pr
 
     options * config = new options(argv[1]);
     std::cout << *config;
-    
-    geneticAlgorithm(config);
+    individual * pool = new individual[config->pop_size];
+    callGPU(pool, config);
 
     std::cout <<"Exiting program...";
     delete config;
+    delete [] pool;
 }
