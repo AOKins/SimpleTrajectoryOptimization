@@ -78,6 +78,14 @@ void options::readFile(std::string filePath) {
                 else if (variableName == "max_generations") {
                     this->max_generations = std::stod(variableValue);
                 }
+                else if (variableName == "useCUDA") {
+                    if (variableValue == "true") {
+                        this->useCUDA = true;
+                    }
+                    else {
+                        this->useCUDA = false;
+                    }
+                }
                 else if (variableName == "rng_seed") { // If the conifguration sets time_seed to NONE then time_seed is set to time(0) 
                     if (variableValue != "NONE") {
                         // If variableValue is not NONE or empty, assumption is that it is a valid double value that can be converted and used

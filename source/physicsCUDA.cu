@@ -57,6 +57,5 @@ __global__ void simulateGPU(options * constants, individual *pool, int *foundSol
     pool[tid].cost = lcl_ind.cost;
     if (lcl_ind.cost < lcl_constants.distance_tol) {
         (*foundSolution) = 1;
-        printf("found solution\n");
     }
 }

@@ -48,7 +48,13 @@ int main(int argc, char *argv[]) { // main.exe input.config <- command to run pr
     options * config = new options(argv[1]);
     std::cout << *config;
     individual * pool = new individual[config->pop_size];
-    callGPU(pool, config);
+    if (config->useCUDA == true) {
+        // Perform version that utilizes CUDA
+        callGPU(pool, config);
+    }
+    else {
+        // Perform CPU only version
+    }
 
     std::cout <<"Exiting program...";
     delete config;

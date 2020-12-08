@@ -98,10 +98,11 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
         // At this point all the simulations are finished including setting costs and found solution determined
         // Copy this boolean to see if a solution was reached
         cudaMemcpy(h_foundSolution, d_foundSolution, sizeof(int), cudaMemcpyDeviceToHost);
-        std::cout << gen_count << ": " << *h_foundSolution << std::endl;
         if (*h_foundSolution == 0) {
             // No solution found yet, create new generation
             geneticAlgorithm<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_constants, d_state);
+            cudaEventRecord(endGenetics);
+            cudaEventSynchronize(endGenetics);
         }
         gen_count++;
         // continue loop until solution found or max generations reached
