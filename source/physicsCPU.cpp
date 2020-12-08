@@ -1,3 +1,6 @@
+#ifndef _PHYSICSCPU_CPP_
+#define _PHYSICSCPU_CPP_
+
 #include "../headers/options.h"
 #include "../headers/coords.cuh"
 #include "../headers/individual.cuh"
@@ -59,6 +62,10 @@ void update(const options& constants, individual * object) {
 }
 
 void simulate(const options constants, individual * object) {
+    object->position.x = 0;
+    object->position.y = 0;
+    object->position.z = 0;
+    
     // Iterate for each time step until the total triptime is reached
     for (double c_time = 0; c_time <= object->time; c_time += constants.time_stepSize) {
         update(constants, object);
@@ -66,3 +73,6 @@ void simulate(const options constants, individual * object) {
     // Trajectory completed, evaluate cost
     object->determineCost(constants.target_Loc);
 }
+
+
+#endif

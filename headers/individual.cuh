@@ -35,7 +35,8 @@ struct individual {
     }
 
     // Constructor that takes constants and rng generator to create a randomized individual (position still 0 0 0 and velocity based on phi/theta)
-    __host__  individual(options constants, std::mt19937_64 & rngEng ) {
+    // Only for host version
+    __host__ individual(options constants, std::mt19937_64 & rngEng ) {
         this->phi = fmod(rngEng(), 2*PI);
         this->theta = fmod(rngEng(), PI/2);
         this->V_nought = fmod(rngEng(), constants.max_launch_v - constants.min_launch_v) + constants.min_launch_v;
