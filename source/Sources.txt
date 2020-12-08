@@ -1,2 +1,3 @@
 http://cs.brown.edu/courses/cs195v/lecture/week11.pdf
 https://stackoverflow.com/questions/12373940/difference-between-global-and-device-functions
+https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/

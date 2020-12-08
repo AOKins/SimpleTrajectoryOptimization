@@ -16,6 +16,8 @@ __device__ data3D calculateAtmosphereGPU( options &constants, data3D objectPos, 
 
 __device__ data3D calculateGravityGPU(options &constants, data3D objectPos) {
     data3D result;
+    result.x = 0;
+    result.y = 0;
     result.z = -constants.gravityAccel;
     return result;
 }
@@ -40,14 +42,21 @@ __device__ void updateGPU(options &constants, individual & object) {
 }
 
 
-__device__ void simulateGPU(options * constants, individual * pool, int tid) {
-    individual local_cpy = pool[tid];
-    // Iterate for each time step until the total triptime is reached
+__global__ void simulateGPU(options * constants, individual *pool, int *foundSolution) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    individual lcl_ind = pool[tid];
+    options lcl_constants = *constants;
 
-    for (double c_time = 0; c_time < local_cpy.time; c_time += constants->time_stepSize) {
-            updateGPU(*constants, local_cpy);
+    // Iterate for each time step until the total triptime is reached
+    for (double c_time = 0; c_time < lcl_ind.time; c_time += lcl_constants.time_stepSize) {
+            updateGPU(lcl_constants, lcl_ind);
     }
     // Trajectory completed, evaluate cost
-    local_cpy.determineCost(constants->target_Loc);
-    pool[tid] = local_cpy;    
+    lcl_ind.determineCost(lcl_constants.target_Loc);
+
+    pool[tid].cost = lcl_ind.cost;
+    if (lcl_ind.cost < lcl_constants.distance_tol) {
+        (*foundSolution) = 1;
+        printf("found solution\n");
+    }
 }

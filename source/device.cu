@@ -7,61 +7,34 @@
 #include <curand_kernel.h>
 
 
-// Beating heart
-// call randomStart() to fill population with random individuals
-// begin loop
-// if no solution, 
-//      call simulateGPU for this thread
-//      perform crossover                          //try to make this pass by reference
 __global__ void geneticAlgorithm(individual *pool, options *constants, curandState_t *state)
 { 
     // Initially assume we do not have a solution
-    bool foundSolution = false;
-    int currentGen = 0;
     // Tid value for this thread
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     int leftIndex = (constants->pop_size + tid-1) % constants->pop_size;
     int rightIndex = (constants->pop_size + tid+1) % constants->pop_size;
-    // Set pool to contain initially randomly created individuals
-    randomStart(pool, *constants, state, tid);
 
-    individual self;
-    individual left;
-    individual right;
+    // Local holding variables to reduce trips to global memory
+    individual self, left, right;
     
-    do  {
-        simulateGPU(constants, pool, tid);
-        self = pool[tid];
-        if (self.cost < constants->distance_tol) {
-            foundSolution = true;
-        }
-        __syncthreads();
-        if (foundSolution == false) {
-            left = pool[leftIndex];
-            right = pool[rightIndex];
-            __syncthreads();//This is just insureance to make sure that the threads check each other in the right order
-            
-            // Now checking with neighbors to decide if we should crossover, preference to left (arbitrary)
-            if (self.cost > left.cost)
-            {
-                crossover(&self, &left, *constants, state, tid);
-            }
-            else if (self.cost > right.cost)
-            {
-                crossover(&self, &right, *constants, state, tid);            
-            }
-        }
-        //display the best of that generation
-        /*
-        for (int i = 0; i < currentGen; i++)
-        {
-            printf("Generation ", i, " best result was: ", pool[tid].cost);
-        }
-        */
-        ++currentGen;
-    } while (foundSolution == false && currentGen < constants->max_generations);
-    //printf("tid %d : %f", tid, pool[tid].cost);
-    //put a statement that states that says you found it
+    // Copy into local memory
+    self = pool[tid];
+    left = pool[leftIndex];
+    right = pool[rightIndex];
+    
+    // Now checking with neighbors to decide if we should crossover, preference to left (arbitrary)
+    if (self.cost > left.cost)
+    {
+        crossover(self, left, state, tid);
+        pool[tid] = self;
+    }
+    else if (self.cost > right.cost)
+    {
+        crossover(self, right, state, tid);
+        pool[tid] = self;
+    }
+
 }  
 
 
@@ -95,19 +68,45 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     curandState *d_state;
     cudaMalloc(&d_state, h_constants->pop_size);
 
-    // Create and use cudaEvents to sync with and record the outcome
-    cudaEvent_t begin, end;
-    cudaEventCreate(&begin);
-    cudaEventCreate(&end);
-    
-    cudaEventRecord(begin);
-    // Initialize the random number generator into state
-    initializeRandom<<<numThreadsUsed, numBlocksUsed>>>(d_state, d_constants);
-    // Perform the algorithm
-    geneticAlgorithm<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_constants, d_state);
-    cudaEventRecord(end);
+    int * d_foundSolution;
+    int * h_foundSolution = new int(0);
+    cudaMalloc(&d_foundSolution, sizeof(int));
+    cudaMemcpy(d_constants, h_foundSolution, sizeof(int), cudaMemcpyHostToDevice);
 
-    cudaEventSynchronize(end);
+    // Create and use cudaEvents to sync with and record the outcome
+    cudaEvent_t initializeStart, startSimulate;
+    cudaEvent_t endSimulation, endGenetics;
+    cudaEventCreate(&initializeStart);
+    cudaEventCreate(&startSimulate);
+    cudaEventCreate(&endSimulation);
+    cudaEventCreate(&endGenetics);
+    
+    cudaEventRecord(initializeStart);
+    // Initialize the random number generator into state
+    initializeRandom<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_state, d_constants, d_foundSolution);
+    cudaEventRecord(startSimulate);
+    cudaEventSynchronize(startSimulate);
+    // At this point all initialization is finished
+
+    int gen_count = 0;
+    do {
+        // Perform the algorithm
+        simulateGPU<<<numThreadsUsed, numBlocksUsed>>>(d_constants, d_pool,  d_foundSolution);
+        cudaEventRecord(endSimulation);
+        cudaEventSynchronize(endSimulation);
+
+        // At this point all the simulations are finished including setting costs and found solution determined
+        // Copy this boolean to see if a solution was reached
+        cudaMemcpy(h_foundSolution, d_foundSolution, sizeof(int), cudaMemcpyDeviceToHost);
+        std::cout << gen_count << ": " << *h_foundSolution << std::endl;
+        if (*h_foundSolution == 0) {
+            // No solution found yet, create new generation
+            geneticAlgorithm<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_constants, d_state);
+        }
+        gen_count++;
+        // continue loop until solution found or max generations reached
+    } while (*h_foundSolution == 0 && gen_count < h_constants->max_generations);
+    std::cout <<"Final " << *h_foundSolution << "-";
 
     // Copy results of the pool into host memory
     cudaMemcpy(h_pool, d_pool, poolMemSize, cudaMemcpyDeviceToHost);
@@ -116,7 +115,11 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaFree(d_constants);
     cudaFree(d_pool);
     cudaFree(d_state);
+    cudaFree(d_foundSolution);
+    cudaEventDestroy(endSimulation);
+    delete h_foundSolution;
 
+    // Temp debugging output onto terminal to see rough results of the algorithm
     std::sort(h_pool, h_pool + h_constants->pop_size);
     std::cout << "All done!\t" << h_pool[0].cost << "\n";
 }
