@@ -32,10 +32,10 @@ __global__ void initializeRandom(individual * pool, curandState_t *state, option
 }
 
 __device__ void maskGen(int * mask, curandState_t * state, int tid) {
-    mask[0] = (curand(&state[tid])) % 3 + 1;
-    mask[1] = (curand(&state[tid])) % 3 + 1;
-    mask[2] = (curand(&state[tid])) % 3 + 1;
-    mask[3] = (curand(&state[tid])) % 3 + 1;
+    mask[0] = curand(&state[tid]) % 3 + 1;
+    mask[1] = curand(&state[tid]) % 3 + 1;
+    mask[2] = curand(&state[tid]) % 3 + 1;
+    mask[3] = curand(&state[tid]) % 3 + 1;
 }
 
 // Crossover
@@ -44,11 +44,14 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
 {
     // Generate a mask to decide which genes get crossed over
     int * mask = new int[4];
+    //maskGen(mask, state, tid);
     maskGen(mask, state, tid);
-
     // Crossing over phi
     switch (mask[0]) 
     {
+        case (1) :
+            parent1.phi = parent1.phi;
+            break;
         // 1 - take from parent 1 (which is already in parent1)
         case (2) : // 2 - take from parent 2
             parent1.phi = parent2.phi;
@@ -56,38 +59,54 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
         case (3) : // 3 - taking average
             parent1.phi = (parent1.phi + parent2.phi) / 2;
             break;
+        default :
+            printf("invalid mask value");
     }
-
     // Crossing over theta
     switch (mask[1])
     {
+        case (1) :
+            parent1.theta = parent1.theta;
+            break;
         case (2) : // 2 - take from parent 2
             parent1.theta = parent2.theta;
             break;
         case (3) : // 3 - taking average
             parent1.theta = (parent1.theta + parent2.theta) / 2;
             break;
+        default :
+            printf("invalid mask value");
     }
 
     // Crossing over V_nought
     switch (mask[2])
     {
+        case (1) :
+            parent1.V_nought = parent1.V_nought;
+            break;
         case (2) : // 2 - take from parent 2
             parent1.V_nought = parent2.V_nought;
             break;
         case (3) : // 3 - taking average
             parent1.V_nought = (parent1.V_nought + parent2.V_nought) / 2;
             break;
+        default :
+            printf("invalid mask value");
     }
 
     switch (mask[3])
     {
+        case (1) :
+            parent1.time = parent1.time;
+            break;
         case (2) : // 2 - take from parent 2
             parent1.time = parent2.time;
             break;
         case (3) : // 3 - taking average
             parent1.time = (parent1.time + parent2.time) / 2;
             break;
+        default :
+            printf("invalid mask value");
     }
     delete [] mask;
     // Crossover complete, if we were doing mutations we would start here

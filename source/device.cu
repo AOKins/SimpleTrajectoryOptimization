@@ -65,8 +65,8 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaMemcpy(d_constants, h_constants, sizeof(options), cudaMemcpyHostToDevice);
     
     // Allocate curandState to use for random number generation in CUDA
-    curandState *d_state;
-    cudaMalloc(&d_state, h_constants->pop_size);
+    curandState_t *d_state;
+    cudaMalloc(&d_state, sizeof(curandState_t)*h_constants->pop_size);
 
     int * d_foundSolution;
     int * h_foundSolution = new int(0);
