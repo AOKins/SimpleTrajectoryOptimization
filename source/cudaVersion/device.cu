@@ -5,34 +5,57 @@
 #include <curand_kernel.h>
 #include "../../headers/output.h" // for calling output methods
 
-__global__ void geneticAlgorithm(individual *pool, options *constants, curandState_t *state)
-{ 
-    // Initially assume we do not have a solution
-    // Tid value for this thread
+// Resource for Odd-Even Transposition Sort - https://www.tutorialspoint.com/parallel_algorithm/parallel_algorithm_sorting.htm
+// Sort array
+template<typename T>
+__device__ void sortArray(T * array, int size, int id, individual *pool) {
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
-    int leftIndex = (constants->pop_size + tid-1) % constants->pop_size;
-    int rightIndex = (constants->pop_size + tid+1) % constants->pop_size;
-
-    // Local holding variables to reduce trips to global memory
-    individual self, left, right;
-    
-    // Copy into local memory
-    self = pool[tid];
-    left = pool[leftIndex];
-    right = pool[rightIndex];
-    
-    // Now checking with neighbors to decide if we should crossover, preference to left (arbitrary)
-    if (self.cost > left.cost)
+    for (int i = 1, i <= threadIdx.x, i++)
     {
-        crossover(self, left, state, tid);
-        pool[tid] = self;
-    }
-    else if (self.cost > right.cost)
-    {
-        crossover(self, right, state, tid);
-        pool[tid] = self;
-    }
+        if (i % 2 == 0 && threadIdx.x % 2 == 0)
+        {
+            //look more into atomicCAS
+            //pool[tid] = pool[tid+1];
+        }
+        else 
+        {
+            
+        }
+        
+        if (i % 2 == 1 && threadIdx.x % 2 == 1)
+        {
 
+        }
+        else
+        {
+
+        }
+    }
+}
+
+// Kernal to perform the genetic algorithm to derive a new generation
+// Input: pool - individual array in global memory, assumed to not have a solution and is not ordered
+//        constants - contains constant values to use such as pop_size, etc.
+//        state - pointer array to be used in crossover for generating random numbers
+// Output: pool contains 
+__global__ void geneticAlgorithm(individual *pool, options *constants, curandState_t *state)
+{
+    // Tid value for this thread in global memory
+    int tid = threadIdx.x + blockIdx.x*blockDim.x;
+    individual p1, p2;
+    // Copy itself into a shared memory pool
+    __shared__ individual survivorPool[blockDim.x];
+    survivorPool[threadIdx.x] = pool[tid];
+    __syncthreads();
+    // Sort shared pool in the block by cost
+    sortArray(&survivorPool, blockDim.x, tid);
+    __syncthreads();
+    // use best 2 individuals to crossover, results in p1
+    p1 = survivorPool[0];
+    p2 = survivorPool[1];
+    crossover(p1, p2, state, tid)
+    // store resulting new individual into global memory
+    pool[tid] = p1;
 }  
 
 // Kernal caller to manage memory and values needed before calling it

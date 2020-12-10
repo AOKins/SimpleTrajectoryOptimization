@@ -1,3 +1,8 @@
 http://cs.brown.edu/courses/cs195v/lecture/week11.pdf
 https://stackoverflow.com/questions/12373940/difference-between-global-and-device-functions
 https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/
+
+Odd-Even Transposition Sort
+https://www.tutorialspoint.com/parallel_algorithm/parallel_algorithm_sorting.htm
+Atomic Functions
+https://www.seas.upenn.edu/~cis565/Lectures2011/Lecture14_CUDA.pdf

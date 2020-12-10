@@ -24,6 +24,7 @@ struct options {
     double min_time;
     double max_time;
 
+    int num_blocks;
     int pop_size;
 
     double max_generations;

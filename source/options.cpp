@@ -105,8 +105,9 @@ void options::readFile(std::string filePath) {
                         this->rng_seed = time(0);
                     }
                 }
-                else if (variableName == "pop_size") {
-                    this->pop_size = std::stoi(variableValue);
+                else if (variableName == "num_blocks") {
+                    this->num_blocks;
+                    this->pop_size = 1024*this->num_blocks;
                 }
                 else {
                     // If none of the if cases were matches, then this is some unknown variable in the config file and output this to the terminal
