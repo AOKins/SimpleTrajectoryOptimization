@@ -1,6 +1,6 @@
-#include "../headers/coords.cuh"
-#include "../headers/individual.cuh"
-#include "../headers/options.h"
+#include "../../headers/coords.cuh"
+#include "../../headers/individual.cuh"
+#include "../../headers/options.h"
 #include <curand.h>
 #include <curand_kernel.h>
 
@@ -31,7 +31,7 @@ __global__ void initializeRandom(individual * pool, curandState_t *state, option
     *foundSolution = 0;
 }
 
-__device__ void maskGen(int * mask, curandState_t * state, int tid) {
+__device__ void maskGenGPU(int * mask, curandState_t * state, int tid) {
     mask[0] = curand(&state[tid]) % 3 + 1;
     mask[1] = curand(&state[tid]) % 3 + 1;
     mask[2] = curand(&state[tid]) % 3 + 1;
@@ -44,8 +44,8 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
 {
     // Generate a mask to decide which genes get crossed over
     int * mask = new int[4];
-    //maskGen(mask, state, tid);
-    maskGen(mask, state, tid);
+    
+    maskGenGPU(mask, state, tid);
     // Crossing over phi
     switch (mask[0]) 
     {

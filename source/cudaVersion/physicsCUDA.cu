@@ -49,7 +49,7 @@ __global__ void simulateGPU(options * constants, individual *pool, int *foundSol
 
     // Iterate for each time step until the total triptime is reached
     for (double c_time = 0; c_time < lcl_ind.time; c_time += lcl_constants.time_stepSize) {
-            updateGPU(lcl_constants, lcl_ind);
+        updateGPU(lcl_constants, lcl_ind);
     }
     // Trajectory completed, evaluate cost
     lcl_ind.determineCost(lcl_constants.target_Loc);

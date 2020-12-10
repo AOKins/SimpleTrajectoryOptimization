@@ -4,9 +4,9 @@
 #include "../headers/options.h"
 #include "../headers/individual.cuh"
 #include "../headers/coords.cuh"
-#include "physicsCPU.cpp"
-#include "device.cu"
-#include "geneticsCPU.cu"
+#include "cpuVersion/physicsCPU.cu"
+#include "cpuVersion/geneticsCPU.cu"
+#include "cudaVersion/device.cu"
 
 
 
@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) { // main.exe input.config <- command to run pr
     options * config = new options(argv[1]);
     std::cout << *config;
     individual * pool = new individual[config->pop_size];
+
     if (config->useCUDA == true) {
         // Perform version that utilizes CUDA
         callGPU(pool, config);

@@ -1,6 +1,6 @@
-#include "../headers/coords.cuh"
-#include "../headers/individual.cuh"
-#include "../headers/options.h"
+#include "../../headers/coords.cuh"
+#include "../../headers/individual.cuh"
+#include "../../headers/options.h"
 #include "physicsCUDA.cu"
 #include "genetics.cu"
 #include <curand.h>

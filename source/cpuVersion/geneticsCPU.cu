@@ -1,13 +1,13 @@
-#include "../headers/coords.cuh"
-#include "../headers/individual.cuh"
-#include "../headers/options.h"
-#include "physicsCPU.cpp"
+#ifndef _GENETICSCPU_CPP_
+#define _GENETICSCPU_CPP_
 
-enum MaskValues {
-    PARENT1 = 1,
-    PARENT2,
-    AVG
-};
+
+#include "../../headers/coords.cuh"
+#include "../../headers/individual.cuh"
+#include "../../headers/options.h"
+#include "physicsCPU.cu"
+#include "output.cpp"
+
 // NOTE: GPU and CPU may not agree on timing for getting a solution (number of generations for example) because of differences in randomness and/or handling floating point numbers
 
 void maskGen(int * mask, std::mt19937_64 & rng)
@@ -25,14 +25,14 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
 
     switch (mask[0]) 
     {
-        case (PARENT1) :
+        case (1) :
             parent1.phi = parent1.phi;
             break;
         // 1 - take from parent 1 (which is already in parent1)
-        case (PARENT2) : // 2 - take from parent 2
+        case (2) : // 2 - take from parent 2
             parent1.phi = parent2.phi;
             break;
-        case (AVG) : // 3 - taking average
+        case (3) : // 3 - taking average
             parent1.phi = (parent1.phi + parent2.phi) / 2;
             break;
         default :
@@ -41,13 +41,13 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
     // Crossing over theta
     switch (mask[1])
     {
-        case (PARENT1) :
+        case (1) :
             parent1.theta = parent1.theta;
             break;
-        case (PARENT2) : // 2 - take from parent 2
+        case (2) : // 2 - take from parent 2
             parent1.theta = parent2.theta;
             break;
-        case (AVG) : // 3 - taking average
+        case (3) : // 3 - taking average
             parent1.theta = (parent1.theta + parent2.theta) / 2;
             break;
         default :
@@ -57,13 +57,13 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
     // Crossing over V_nought
     switch (mask[2])
     {
-        case (PARENT1) :
+        case (1) :
             parent1.V_nought = parent1.V_nought;
             break;
-        case (PARENT2) : // 2 - take from parent 2
+        case (2) : // 2 - take from parent 2
             parent1.V_nought = parent2.V_nought;
             break;
-        case (AVG) : // 3 - taking average
+        case (3) : // 3 - taking average
             parent1.V_nought = (parent1.V_nought + parent2.V_nought) / 2;
             break;
         default :
@@ -72,13 +72,13 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
 
     switch (mask[3])
     {
-        case (PARENT1) :
+        case (1) :
             parent1.time = parent1.time;
             break;
-        case (PARENT2) : // 2 - take from parent 2
+        case (2) : // 2 - take from parent 2
             parent1.time = parent2.time;
             break;
-        case (AVG) : // 3 - taking average
+        case (3) : // 3 - taking average
             parent1.time = (parent1.time + parent2.time) / 2;
             break;
         default :
@@ -112,6 +112,9 @@ void geneticAlgorithmCPU(options * constants, individual * pool, int id, std::mt
 
 void callCPU(options * constants, individual * pool )
 {
+    // Initialize performance file by calling it
+    initializeRecording();
+
     // Create rng generator
     std::mt19937_64 rng(constants->rng_seed);
     bool foundSolution = false;
@@ -129,7 +132,9 @@ void callCPU(options * constants, individual * pool )
                 foundSolution = true;
             }
         }
-    
+        // record best here!
+        recordGeneration(pool, constants, genCount);
+
         // if no solution, perform crossovers
         if (foundSolution == false)
         {
@@ -142,4 +147,8 @@ void callCPU(options * constants, individual * pool )
     } while (foundSolution == false && genCount < constants->max_generations);
     // while no solution and genCount < maxGen
     std::cout << genCount << std::endl;
+
+    recordSolution(pool, constants);
 }
+
+#endif

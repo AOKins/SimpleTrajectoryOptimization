@@ -1,9 +1,9 @@
 #ifndef _PHYSICSCPU_CPP_
 #define _PHYSICSCPU_CPP_
 
-#include "../headers/options.h"
-#include "../headers/coords.cuh"
-#include "../headers/individual.cuh"
+#include "../../headers/options.h"
+#include "../../headers/coords.cuh"
+#include "../../headers/individual.cuh"
 
 // File that contains CPU version of physics simulation calculations to serve as baseline comparison before creating CUDA alternative implementation
 

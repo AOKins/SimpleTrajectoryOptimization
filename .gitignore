@@ -2,3 +2,5 @@
 *.vscode
 *.exp
 *.lib
+performance.csv
+results.txt

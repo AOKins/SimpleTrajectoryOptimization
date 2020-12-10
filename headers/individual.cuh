@@ -82,4 +82,13 @@ bool operator<(const individual &ind1, const individual &ind2) {
     return ind1.cost < ind2.cost;
 }
 
+std::ostream& operator<<(std::ostream& os, const individual ind) {
+    os << std::setprecision(6);
+    os << "Distance from Target" << ind.cost << " meters\n";
+    os << "Phi: " << ind.phi << " radians\n" 
+       << "Theta: " << ind.theta << " radians\n" 
+       << "Velocity: "<< ind.V_nought << " m/s\n" 
+       << "Time: "<< ind.time << "s\n";
+    return os;
+}
 #endif
