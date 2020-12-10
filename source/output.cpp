@@ -1,12 +1,12 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "cpuVersion/geneticsCPU.cu"
 #include "../headers/individual.cuh"
 #include "../headers/options.h"
 
 // Intiailize file function <- called at start before an algorihtm to set the header row of the file
-
+// Input: none
+// Output: A file titled "performance.csv" is created with a header row to be used in recordGeneration()
 void initializeRecording() {
     std::ofstream file;
     file.open("performance.csv", std::ios_base::binary);
@@ -15,6 +15,10 @@ void initializeRecording() {
 }
 
 // Append file performance function <- called every generation (or so) to record performance 
+// Input: pool - array of individuals to be used in recording
+//        constants - contains constant values such as pop_size and distance_tol
+//        genCount - the number of generations currently having been performed
+// Output: "performance.csv" is appended info regarding this generation (such as cost of best individual)
 void recordGeneration(individual * pool, options * constants, int genCount) {
     //get the best thread from a generation. get it from the pool
     // Creating a seperate array for the sorted pool to not unshuffle the actual pool
@@ -34,6 +38,9 @@ void recordGeneration(individual * pool, options * constants, int genCount) {
 }
 
 // Record solution function <- if we got a solution, this is called
+// Input: pool - array of individuals to be used in recording what the solution(s) are
+//        constants - contains constant values such as pop_size and distance_tol
+// Output: constants and individuals with cost < constants->distance_tol are outputting into "results.txt" using << operator
 void recordSolution(individual * pool, options * constants)
 {
     // sort the pool

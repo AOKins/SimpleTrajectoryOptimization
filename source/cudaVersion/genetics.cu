@@ -1,6 +1,7 @@
 #include "../../headers/coords.cuh"
 #include "../../headers/individual.cuh"
 #include "../../headers/options.h"
+// Includes for cuRAND library to access and call functions and use curandState
 #include <curand.h>
 #include <curand_kernel.h>
 

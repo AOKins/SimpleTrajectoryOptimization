@@ -5,10 +5,14 @@
 #include <iomanip> // setprecision
 #include <math.h>
 
+// Constructor that takes in a string to where to find the file to read
 options::options(std::string filePath) {
     options::readFile(filePath);
 }
 
+// Called by constructor to read a file and assign variables to this struct
+// Input: filePath - string to where the file is expected to be
+// Output: this options object is assigned recognized variables its contents
 void options::readFile(std::string filePath) {
     std::string line;
     std::ifstream configFile;
@@ -115,6 +119,7 @@ void options::readFile(std::string filePath) {
     this->windcomponents.z = 0;
 }
 
+// Overloaded << operator for options struct
 std::ostream& operator<<(std::ostream& os, const options object) {
     os << std::setprecision(6);
     os << "\n========Current Settings========\n";

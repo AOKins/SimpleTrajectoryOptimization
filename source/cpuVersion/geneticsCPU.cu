@@ -1,15 +1,13 @@
-#ifndef _GENETICSCPU_CPP_
-#define _GENETICSCPU_CPP_
-
-
 #include "../../headers/coords.cuh"
 #include "../../headers/individual.cuh"
 #include "../../headers/options.h"
+#include "../../headers/output.h"
 #include "physicsCPU.cu"
-#include "output.cpp"
 
-// NOTE: GPU and CPU may not agree on timing for getting a solution (number of generations for example) because of differences in randomness and/or handling floating point numbers
-
+// Method to generate a random mask
+// Input: mask - pointer of length 4 to store mask values that range between 1 and 3
+//        rng - the random number generator to use
+// Output: mask contains 4 values randomly assigned 1,2, or 3
 void maskGen(int * mask, std::mt19937_64 & rng)
 {
     mask[0] = rng() % 3 + 1;
@@ -18,6 +16,10 @@ void maskGen(int * mask, std::mt19937_64 & rng)
     mask[3] = rng() % 3 + 1;
 }
 
+// Method to handle the crossover between two parents to create a new individual
+// Input: parent1, parent2 - two individuals to crossover to create new individual out of
+//        rng - the random number generator to use
+// Output: parent1 holds the new individual, parent2 remains uncahnged
 void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng)
 {
     int * mask = new int[4];
@@ -88,8 +90,12 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
     delete [] mask;
 }
 
-
-// Experimental testing grounds
+// Method to handle the overall genetic algorithm behavior
+// Input: constants - values from config that contains information such as pop_size, distance_tol, etc. that need to be avaliable
+//        pool - pointer to array of individuals
+//        id - index value for the individual being performed in the genetic algorithm, this method chosen so it is similar to GPU version in comparing
+//        rng - the random number generator to use
+// Output: pool[id] contains possibly (if not a local best) new individual that needs to be evaluated for cost
 void geneticAlgorithmCPU(options * constants, individual * pool, int id, std::mt19937_64 & rng) {
     int leftIndex, rightIndex;
     individual self, left, right;
@@ -110,6 +116,10 @@ void geneticAlgorithmCPU(options * constants, individual * pool, int id, std::mt
     }
 }
 
+// Method for performing the search for a solution using a genetic algorithm and physics simulation
+// Input: constants - values from config that contains information such as pop_size, distance_tol, etc. that need to be avaliable
+//        pool - pointer to array of individuals to use
+// Output: pool may contains individuals that are a solution to hitting the target
 void callCPU(options * constants, individual * pool )
 {
     // Initialize performance file by calling it
@@ -150,5 +160,3 @@ void callCPU(options * constants, individual * pool )
 
     recordSolution(pool, constants);
 }
-
-#endif

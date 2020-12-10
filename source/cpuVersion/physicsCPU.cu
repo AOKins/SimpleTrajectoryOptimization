@@ -1,6 +1,3 @@
-#ifndef _PHYSICSCPU_CPP_
-#define _PHYSICSCPU_CPP_
-
 #include "../../headers/options.h"
 #include "../../headers/coords.cuh"
 #include "../../headers/individual.cuh"
@@ -61,6 +58,10 @@ void update(const options& constants, individual * object) {
     object->velocity.z = object->velocity.z + net_accel.z*constants.time_stepSize;
 }
 
+// Simulate a trajectory using a given object to determine how close it is to the target
+// Input: constants - contains needed values such as step size and target location
+//        object - the individual that contains the parameters to simulate the trajector (angles, V_nought, and total trip time)
+// Output: object contains cost for how close it is to the target and final position starting from 0,0,0 
 void simulate(const options constants, individual * object) {
     object->position.x = 0;
     object->position.y = 0;
@@ -73,6 +74,3 @@ void simulate(const options constants, individual * object) {
     // Trajectory completed, evaluate cost
     object->determineCost(constants.target_Loc);
 }
-
-
-#endif

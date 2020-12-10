@@ -1,3 +1,4 @@
+// Functions that handle simulating trajectory on device called from kernal
 
 __device__ data3D calculateAtmosphereGPU( options &constants, data3D objectPos, data3D objectVel) {
     data3D result;

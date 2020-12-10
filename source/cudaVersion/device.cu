@@ -1,11 +1,9 @@
-#include "../../headers/coords.cuh"
-#include "../../headers/individual.cuh"
-#include "../../headers/options.h"
 #include "physicsCUDA.cu"
 #include "genetics.cu"
+// Includes for cuRAND library to access and use curandState to be used in genetic algorithm
 #include <curand.h>
 #include <curand_kernel.h>
-
+#include "../../headers/output.h" // for calling output methods
 
 __global__ void geneticAlgorithm(individual *pool, options *constants, curandState_t *state)
 { 
@@ -37,10 +35,10 @@ __global__ void geneticAlgorithm(individual *pool, options *constants, curandSta
 
 }  
 
-
 // Kernal caller to manage memory and values needed before calling it
 // Input: h_pool - pointer to individual array that holds the individual parameters needing to be computed with
 //        h_constants - pointer to options struct that contains the constants needed related to the program
+// Output: h_pool may contain individuals with valid solutions to hitting the target
 __host__ void callGPU(individual * h_pool, options * h_constants) {
     // Get properties of the gpu to display and also so we could use the maxThreadsPerBlock property
     cudaDeviceProp * properties = new cudaDeviceProp;
