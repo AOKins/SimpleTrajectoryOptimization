@@ -1,4 +1,4 @@
-#include "physicsCUDA.cu"
+#include "../physics.cu"
 #include "genetics.cu"
 // Includes for cuRAND library to access and use curandState to be used in genetic algorithm
 #include <curand.h>
@@ -58,6 +58,7 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaMalloc(&d_pool, poolMemSize);
     cudaMemcpy(d_pool, h_pool, poolMemSize, cudaMemcpyHostToDevice);
 
+    // Allocate memory for constants object
     options * d_constants;
     cudaMalloc(&d_constants, sizeof(options));
     cudaMemcpy(d_constants, h_constants, sizeof(options), cudaMemcpyHostToDevice);
@@ -66,6 +67,7 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     curandState_t *d_state;
     cudaMalloc(&d_state, sizeof(curandState_t)*h_constants->pop_size);
 
+    // Allocate memory for integer object for determining if solution is found in a thread
     int * d_foundSolution;
     int * h_foundSolution = new int(0);
     cudaMalloc(&d_foundSolution, sizeof(int));
@@ -115,10 +117,11 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaFree(d_pool);
     cudaFree(d_state);
     cudaFree(d_foundSolution);
+    // Destroy cudaEvent objects
+    cudaEventDestroy(initializeStart);
+    cudaEventDestroy(startSimulate);
     cudaEventDestroy(endSimulation);
+    cudaEventDestroy(endGenetics);
+    // Deallocate host memory
     delete h_foundSolution;
-
-    // Temp debugging output onto terminal to see rough results of the algorithm
-    std::sort(h_pool, h_pool + h_constants->pop_size);
-    std::cout << "All done!\t" << h_pool[0].cost << "\n";
 }

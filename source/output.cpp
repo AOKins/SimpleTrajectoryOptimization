@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <string>
 #include "../headers/individual.cuh"
@@ -8,8 +7,10 @@
 // Input: none
 // Output: A file titled "performance.csv" is created with a header row to be used in recordGeneration()
 void initializeRecording() {
+    /// Create a file called performance.csv
     std::ofstream file;
     file.open("performance.csv", std::ios_base::binary);
+    // Output a header row only and then close
     file << "Gen Number, Best Cost (m),\n";
     file.close();
 }
@@ -20,19 +21,19 @@ void initializeRecording() {
 //        genCount - the number of generations currently having been performed
 // Output: "performance.csv" is appended info regarding this generation (such as cost of best individual)
 void recordGeneration(individual * pool, options * constants, int genCount) {
-    //get the best thread from a generation. get it from the pool
     // Creating a seperate array for the sorted pool to not unshuffle the actual pool
     individual * sortedPool = new individual[constants->pop_size];
     for (int i = 0; i < constants->pop_size; i++) {
         sortedPool[i] = pool[i];
     }
+    // Sort the copied array
     std::sort(sortedPool, sortedPool + constants->pop_size);
-
+    // Open to append and output best individual to the performance.csv file 
     std::ofstream ExcelFile;
     ExcelFile.open("performance.csv", std::ios_base::app);
     
     ExcelFile << genCount << "," << sortedPool[0].cost << ",\n";
-
+    // Close the excel file and delete the seperate pool array
     ExcelFile.close();
     delete [] sortedPool;
 }
@@ -49,14 +50,16 @@ void recordSolution(individual * pool, options * constants)
     // Open a results file .txt
     std::ofstream resultsFile;
     resultsFile.open("results.txt", std::ios_base::binary);
-
+    // output the constants object into the text file first
     resultsFile << *constants << std::endl;
 
+    // Output all valid solutions to resultsFile
     int i = 0;
     while (pool[i].cost < constants->distance_tol && i < constants->pop_size) {
         // Iterate until we see an individual that is not a solution
         resultsFile << pool[i] << std::endl;
         i++;
     }
+    // Got all info out, close file and end
     resultsFile.close();
 }

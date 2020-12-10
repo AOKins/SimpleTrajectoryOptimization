@@ -20,7 +20,9 @@ void options::readFile(std::string filePath) {
 
     if (configFile.is_open()) {
         int i = 0;
+        // Read each line
         while ( std::getline(configFile, line) && ++i) {
+            // If not an empty line and not a commented out line
             if (line != "" && ( line.find("//") != 0 )) {
                 int equals_pivot = line.find("="); // Get index to where the equal sign is
                 int end_point = line.find_first_of(" "); // Get index to where the first space is (assuming no spaces from variable name through to end of assignment of value)
@@ -28,6 +30,7 @@ void options::readFile(std::string filePath) {
                 std::string variableName = line.substr(0, equals_pivot   );
                 std::string variableValue = line.substr( equals_pivot + 1, end_point - equals_pivot - 1);
 
+                // Determine appriopriate variable based on the variableName and use appriopriate conversion function
                 if (variableName == "windSpeed") {
                     this->windSpeedmagnitude = std::stod(variableValue);
                 }
@@ -86,7 +89,7 @@ void options::readFile(std::string filePath) {
                     if (variableValue == "true") {
                         this->useCUDA = true;
                     }
-                    else {
+                    else { // if variable value is anything other than true, then assume false
                         this->useCUDA = false;
                     }
                 }
@@ -113,7 +116,7 @@ void options::readFile(std::string filePath) {
         std::cout << "Unable to open " + filePath + " file!\n";
     }
 
-    // Now got values, set derived ones now
+    // Now got values, set derived ones now for wind in 3D components as opposed to direction/magnitude
     this->windcomponents.x = windSpeedmagnitude * cos(this->windDirection);
     this->windcomponents.y = windSpeedmagnitude * sin(this->windDirection);
     this->windcomponents.z = 0;

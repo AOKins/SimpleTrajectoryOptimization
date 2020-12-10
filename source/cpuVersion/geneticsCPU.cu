@@ -2,7 +2,7 @@
 #include "../../headers/individual.cuh"
 #include "../../headers/options.h"
 #include "../../headers/output.h"
-#include "physicsCPU.cu"
+#include "../physics.cu"
 
 // Method to generate a random mask
 // Input: mask - pointer of length 4 to store mask values that range between 1 and 3

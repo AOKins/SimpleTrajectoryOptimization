@@ -7,7 +7,6 @@
 
 // Put genetics CUDA code here
 
-
 // Random Start
 // Input: pool array containing individuals that need to be asssigned random parameters
 //        constants - contains needed values
@@ -60,8 +59,6 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
         case (3) : // 3 - taking average
             parent1.phi = (parent1.phi + parent2.phi) / 2;
             break;
-        default :
-            printf("invalid mask value");
     }
     // Crossing over theta
     switch (mask[1])
@@ -75,8 +72,6 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
         case (3) : // 3 - taking average
             parent1.theta = (parent1.theta + parent2.theta) / 2;
             break;
-        default :
-            printf("invalid mask value");
     }
 
     // Crossing over V_nought
@@ -91,8 +86,6 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
         case (3) : // 3 - taking average
             parent1.V_nought = (parent1.V_nought + parent2.V_nought) / 2;
             break;
-        default :
-            printf("invalid mask value");
     }
 
     switch (mask[3])
@@ -106,8 +99,6 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
         case (3) : // 3 - taking average
             parent1.time = (parent1.time + parent2.time) / 2;
             break;
-        default :
-            printf("invalid mask value");
     }
     delete [] mask;
     // Crossover complete, if we were doing mutations we would start here
