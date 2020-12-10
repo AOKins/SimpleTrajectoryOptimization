@@ -27,6 +27,7 @@ struct options {
     int pop_size;
 
     double max_generations;
+    int display_freq;
     bool useCUDA;
     
     options(std::string filePath);

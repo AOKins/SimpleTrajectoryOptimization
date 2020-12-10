@@ -53,6 +53,8 @@ void recordSolution(individual * pool, options * constants)
     // output the constants object into the text file first
     resultsFile << *constants << std::endl;
 
+    std::cout << "Best Final is " << pool[0].cost << std::endl;
+
     // Output all valid solutions to resultsFile
     int i = 0;
     while (pool[i].cost < constants->distance_tol && i < constants->pop_size) {
@@ -62,4 +64,16 @@ void recordSolution(individual * pool, options * constants)
     }
     // Got all info out, close file and end
     resultsFile.close();
+}
+
+void terminalDisplay(individual * pool, options * constants, int genCount) {
+    individual * sortedPool = new individual[constants->pop_size];
+    for (int i = 0; i < constants->pop_size; i++) {
+        sortedPool[i] = pool[i];
+    }
+    // Sort the copied array
+    std::sort(sortedPool, sortedPool + constants->pop_size);
+
+    std::cout << "\nGeneration: " << genCount << std::endl;
+    std::cout << "\t Best Individual Cost: " << sortedPool[0].cost << std::endl;
 }

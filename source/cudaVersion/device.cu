@@ -74,14 +74,15 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaMemcpy(d_constants, h_foundSolution, sizeof(int), cudaMemcpyHostToDevice);
 
     // Create and use cudaEvents to sync with and record the outcome
-    cudaEvent_t initializeStart, startSimulate;
-    cudaEvent_t endSimulation, endGenetics;
-    cudaEventCreate(&initializeStart);
+    cudaEvent_t start, end;
+    cudaEvent_t endSimulation, endGenetics, startSimulate;
+    cudaEventCreate(&start);
     cudaEventCreate(&startSimulate);
     cudaEventCreate(&endSimulation);
     cudaEventCreate(&endGenetics);
+    cudaEventCreate(&end);
     
-    cudaEventRecord(initializeStart);
+    cudaEventRecord(start);
     // Initialize the random number generator into state
     initializeRandom<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_state, d_constants, d_foundSolution);
     cudaEventRecord(startSimulate);
@@ -104,13 +105,24 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
             cudaEventRecord(endGenetics);
             cudaEventSynchronize(endGenetics);
         }
+
+        // Every display frequency display onto the terminal using terminalDislay() method in output.cpp
+        if (gen_count % h_constants->display_freq == 0) {
+            std::cout << "Currently on " << gen_count << std::endl;
+        }
+
         gen_count++;
         // continue loop until solution found or max generations reached
     } while (*h_foundSolution == 0 && gen_count < h_constants->max_generations);
+    // End of algorithm
+    cudaEventRecord(end);
+
     std::cout <<"Final " << *h_foundSolution << "-";
 
     // Copy results of the pool into host memory
     cudaMemcpy(h_pool, d_pool, poolMemSize, cudaMemcpyDeviceToHost);
+
+    recordSolution(h_pool, h_constants);
 
     // Free resources from device before ending function
     cudaFree(d_constants);
@@ -118,10 +130,12 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaFree(d_state);
     cudaFree(d_foundSolution);
     // Destroy cudaEvent objects
-    cudaEventDestroy(initializeStart);
+    cudaEventDestroy(start);
     cudaEventDestroy(startSimulate);
     cudaEventDestroy(endSimulation);
     cudaEventDestroy(endGenetics);
+    cudaEventDestroy(end);
     // Deallocate host memory
     delete h_foundSolution;
+    // Return how long the algorithm took (ignoring starting allocation/copy)
 }

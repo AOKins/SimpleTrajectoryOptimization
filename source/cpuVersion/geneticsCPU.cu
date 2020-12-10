@@ -4,6 +4,7 @@
 #include "../../headers/output.h"
 #include "../physics.cu"
 
+
 // Method to generate a random mask
 // Input: mask - pointer of length 4 to store mask values that range between 1 and 3
 //        rng - the random number generator to use
@@ -122,6 +123,7 @@ void geneticAlgorithmCPU(options * constants, individual * pool, int id, std::mt
 // Output: pool may contains individuals that are a solution to hitting the target
 void callCPU(options * constants, individual * pool )
 {
+
     // Initialize performance file by calling it
     initializeRecording();
 
@@ -145,6 +147,11 @@ void callCPU(options * constants, individual * pool )
         // record best here!
         recordGeneration(pool, constants, genCount);
 
+        // Every display frequency display onto the terminal using terminalDislay() method in output.cpp
+        if (genCount % constants->display_freq == 0) {
+            terminalDisplay(pool, constants, genCount);
+        }
+
         // if no solution, perform crossovers
         if (foundSolution == false)
         {
@@ -156,7 +163,9 @@ void callCPU(options * constants, individual * pool )
         genCount++;
     } while (foundSolution == false && genCount < constants->max_generations);
     // while no solution and genCount < maxGen
+
     std::cout << genCount << std::endl;
 
     recordSolution(pool, constants);
+
 }

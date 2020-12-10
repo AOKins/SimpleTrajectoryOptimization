@@ -85,6 +85,9 @@ void options::readFile(std::string filePath) {
                 else if (variableName == "max_generations") {
                     this->max_generations = std::stod(variableValue);
                 }
+                else if (variableName == "display_freq") {
+                    this->display_freq = std::stoi(variableValue);
+                }
                 else if (variableName == "useCUDA") {
                     if (variableValue == "true") {
                         this->useCUDA = true;

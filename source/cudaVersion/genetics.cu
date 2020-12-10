@@ -10,6 +10,7 @@
 // Random Start
 // Input: pool array containing individuals that need to be asssigned random parameters
 //        constants - contains needed values
+// Output: pool[tid] contains an individual with random launch parameters
 __device__ void randomStart(individual *pool, options &constants, curandState * state, int tid)
 {   // Generate a random number between 0 and 1111 then divide by 10 (to get a double value between 0 and 1)
     double rand_phi   = (double(curand(&state[tid]) % 1111) / 1110.0) * (2*PI); //phi randomly set between 0 and 2PI
@@ -20,8 +21,6 @@ __device__ void randomStart(individual *pool, options &constants, curandState * 
     pool[tid] = individual(rand_phi, rand_theta, rand_V, rand_time);
 }
 
-// Mask is pointer to array of 4
-// Output: mask contains values randomly between 1 and 3 inclusive
 __global__ void initializeRandom(individual * pool, curandState_t *state, options *constants, int * foundSolution)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -31,6 +30,11 @@ __global__ void initializeRandom(individual * pool, curandState_t *state, option
     *foundSolution = 0;
 }
 
+// Mask is pointer to array of 4
+// Input: mask - pointer to int array of size 4
+//        state - pointer to curandState_t array to use for random generation 
+//        tid - int for index in the array
+// Output: mask contains values randomly between 1 and 3 inclusive
 __device__ void maskGenGPU(int * mask, curandState_t * state, int tid) {
     mask[0] = curand(&state[tid]) % 3 + 1;
     mask[1] = curand(&state[tid]) % 3 + 1;
