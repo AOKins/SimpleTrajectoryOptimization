@@ -5,58 +5,6 @@
 #include <curand_kernel.h>
 #include "../../headers/output.h" // for calling output methods
 
-// Resource for Odd-Even Transposition Sort - https://www.tutorialspoint.com/parallel_algorithm/parallel_algorithm_sorting.htm
-// Sort array
-template<typename T>
-__device__ void sortArray(T * array, int size, int id, individual *pool) {
-    int tid = threadIdx.x + blockIdx.x*blockDim.x;
-    for (int i = 1, i <= threadIdx.x, i++)
-    {
-        if (i % 2 == 0 && threadIdx.x % 2 == 0)
-        {
-            //look more into atomicCAS
-            //pool[tid] = pool[tid+1];
-        }
-        else 
-        {
-            
-        }
-        
-        if (i % 2 == 1 && threadIdx.x % 2 == 1)
-        {
-
-        }
-        else
-        {
-
-        }
-    }
-}
-
-// Kernal to perform the genetic algorithm to derive a new generation
-// Input: pool - individual array in global memory, assumed to not have a solution and is not ordered
-//        constants - contains constant values to use such as pop_size, etc.
-//        state - pointer array to be used in crossover for generating random numbers
-// Output: pool contains 
-__global__ void geneticAlgorithm(individual *pool, options *constants, curandState_t *state)
-{
-    // Tid value for this thread in global memory
-    int tid = threadIdx.x + blockIdx.x*blockDim.x;
-    individual p1, p2;
-    // Copy itself into a shared memory pool
-    __shared__ individual survivorPool[blockDim.x];
-    survivorPool[threadIdx.x] = pool[tid];
-    __syncthreads();
-    // Sort shared pool in the block by cost
-    sortArray(&survivorPool, blockDim.x, tid);
-    __syncthreads();
-    // use best 2 individuals to crossover, results in p1
-    p1 = survivorPool[0];
-    p2 = survivorPool[1];
-    crossover(p1, p2, state, tid)
-    // store resulting new individual into global memory
-    pool[tid] = p1;
-}  
 
 // Kernal caller to manage memory and values needed before calling it
 // Input: h_pool - pointer to individual array that holds the individual parameters needing to be computed with
@@ -67,7 +15,7 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaDeviceProp * properties = new cudaDeviceProp;
     cudaGetDeviceProperties(properties,0);
     std::cout <<"GPU Properties (" << properties->name << " detected)\n";
-    int numThreadsUsed = properties->maxThreadsPerBlock;
+    int numThreadsUsed = 32;
     std::cout << "\tThreads used: " << numThreadsUsed << "\n"; 
     // Holds how many blocks to use for the kernal to cover the entire pool, assuming that pop_size is divisible by maxThreadsPerBlock
     int numBlocksUsed = h_constants->pop_size / numThreadsUsed;
@@ -104,43 +52,31 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaEventCreate(&endSimulation);
     cudaEventCreate(&endGenetics);
     cudaEventCreate(&end);
-    
+
     cudaEventRecord(start);
     // Initialize the random number generator into state
-    initializeRandom<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_state, d_constants, d_foundSolution);
-    cudaEventRecord(startSimulate);
-    cudaEventSynchronize(startSimulate);
+    initializeRandom<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_state, d_constants, d_foundSolution);
+    cudaDeviceSynchronize();
     // At this point all initialization is finished
 
     int gen_count = 0;
     do {
         // Perform the algorithm
-        simulateGPU<<<numThreadsUsed, numBlocksUsed>>>(d_constants, d_pool,  d_foundSolution);
-        cudaEventRecord(endSimulation);
-        cudaEventSynchronize(endSimulation);
-
+        simulateGPU<<<numBlocksUsed, numThreadsUsed>>>(d_constants, d_pool,  d_foundSolution);
+        cudaDeviceSynchronize();
         // At this point all the simulations are finished including setting costs and found solution determined
+
         // Copy this boolean to see if a solution was reached
         cudaMemcpy(h_foundSolution, d_foundSolution, sizeof(int), cudaMemcpyDeviceToHost);
-        if (*h_foundSolution == 0) {
-            // No solution found yet, create new generation
-            geneticAlgorithm<<<numThreadsUsed, numBlocksUsed>>>(d_pool, d_constants, d_state);
-            cudaEventRecord(endGenetics);
-            cudaEventSynchronize(endGenetics);
-        }
-
-        // Every display frequency display onto the terminal using terminalDislay() method in output.cpp
-        if (gen_count % h_constants->display_freq == 0) {
-            std::cout << "Currently on " << gen_count << std::endl;
+        if (*h_foundSolution == 0) {            // No solution found yet, create new generation
+            geneticAlgorithm<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_constants, d_state);
+            cudaDeviceSynchronize();
         }
 
         gen_count++;
-        // continue loop until solution found or max generations reached
-    } while (*h_foundSolution == 0 && gen_count < h_constants->max_generations);
+    } while (*h_foundSolution == 0 && gen_count < h_constants->max_generations); // continue loop until solution found or max generations reached
     // End of algorithm
     cudaEventRecord(end);
-
-    std::cout <<"Final " << *h_foundSolution << "-";
 
     // Copy results of the pool into host memory
     cudaMemcpy(h_pool, d_pool, poolMemSize, cudaMemcpyDeviceToHost);

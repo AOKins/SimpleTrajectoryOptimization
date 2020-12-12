@@ -17,12 +17,14 @@ int main(int argc, char *argv[]) { // main.exe input.config <- command to run pr
     clock_t start,end;
     // Determine whether to use cuda version of algorithm or cpu only verison
     if (config->useCUDA == true) {
+        std::cout << "\n\t\tUSING CUDA\n";
         // Perform version that utilizes CUDA
         start = clock();
         callGPU(pool, config);
         end = clock();
     }
-    else {
+    else {        std::cout << "\n\tNOT\n";
+
         // Perform CPU only version
         start = clock();
         callCPU(config, pool);

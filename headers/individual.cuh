@@ -78,7 +78,7 @@ struct individual {
     }
 };
 
-bool operator<(const individual &ind1, const individual &ind2) {
+__host__ __device__ bool operator<(const individual &ind1, const individual &ind2) {
     return ind1.cost < ind2.cost;
 }
 

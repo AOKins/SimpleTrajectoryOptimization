@@ -106,8 +106,8 @@ void options::readFile(std::string filePath) {
                     }
                 }
                 else if (variableName == "num_blocks") {
-                    this->num_blocks;
-                    this->pop_size = 1024*this->num_blocks;
+                    this->num_blocks = std::stoi(variableValue);
+                    this->pop_size = 32*this->num_blocks; // 32 for warp size
                 }
                 else {
                     // If none of the if cases were matches, then this is some unknown variable in the config file and output this to the terminal

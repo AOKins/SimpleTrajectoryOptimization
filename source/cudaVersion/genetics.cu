@@ -7,6 +7,81 @@
 
 // Put genetics CUDA code here
 
+// Resource for Odd-Even Transposition Sort - https://www.tutorialspoint.com/parallel_algorithm/parallel_algorithm_sorting.htm
+// Sort array
+template<typename T>
+__device__ void sortArray(T * array, int size) {
+    __shared__ bool sorted;
+    sorted = false;
+    int id = threadIdx.x;
+
+    int leftID = (size + id-1) % size;
+    int rightID = (size + id+1) % size;
+    __syncthreads();
+    //old = atomicCAS ( &addr, compare, value );  // old = *addr;  *addr = ((old == compare) ? value : old)
+    //atomicCAS(&address, the value that you want to compare, the value use are using to compare to)
+    /*
+    int atomicCAS (int *id, self.cost, left.cost)
+
+    { //make up keyword
+        __lock (id)
+        {
+            int old = *id;
+            *id = (old == self.cost) ? left.cost : old;
+            return old;
+        }
+    }
+    int atomicCAS (int *id, self.cost, right.cost)
+    */
+    int i = 1;
+    while (!sorted && i <= 32*32)
+    {        
+        // Assume sorted until otherwise (a swap was performed)
+        sorted = true;
+        if (id > 0 && id < 31) {
+            if (i % 2 == 0 && id % 2 == 0) {
+                //look more into atomicCAS
+                if (array[rightID] < array[id]) {
+                    T temp = array[id];
+                    array[id] = array[rightID];
+                    array[rightID] = temp;
+                    sorted = false;
+                }
+            }
+            else {
+                if (array[id] < array[leftID]) {
+                    T temp = array[id];
+                    array[id] = array[leftID];
+                    array[leftID] = temp;
+                    sorted = false;
+                }
+            }
+
+            if (i % 2 == 1 && id % 2 == 1) {
+                if (array[rightID] < array[id]) {
+                    T temp = array[id];
+                    array[id] = array[rightID];
+                    array[rightID] = temp;
+                    sorted = false;
+                }
+            }
+            else {
+                if (array[id] < array[leftID]) {
+                    T temp = array[id];
+                    array[id] = array[leftID];
+                    array[leftID] = temp;
+                    sorted = false;
+                }
+
+            }
+            i++;    
+        }
+        __syncthreads();
+    }
+}
+
+
+
 // Random Start
 // Input: pool array containing individuals that need to be asssigned random parameters
 //        constants - contains needed values
@@ -25,7 +100,6 @@ __global__ void initializeRandom(individual * pool, curandState_t *state, option
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     curand_init(constants->rng_seed, index, 0, &state[index]);
-
     randomStart(pool, *constants, state, index);
     *foundSolution = 0;
 }
@@ -107,3 +181,41 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
     delete [] mask;
     // Crossover complete, if we were doing mutations we would start here
 }
+
+// Kernal to perform the genetic algorithm to derive a new generation
+// Input: pool - individual array in global memory, assumed to not have a solution and is not ordered
+//        constants - contains constant values to use such as pop_size, etc.
+//        state - pointer array to be used in crossover for generating random numbers
+// Output: pool contains 
+__global__ void geneticAlgorithm(individual * pool, options * constants, curandState_t * state) {
+
+    // Tid value for this thread in global memory
+    int tid = threadIdx.x + blockIdx.x*blockDim.x;
+    individual p1, p2;
+    // Copy itself into a shared memory pool
+    __shared__ individual * survivorPool; 
+    survivorPool = new individual[32];
+    __syncthreads();
+
+    survivorPool[threadIdx.x] = pool[tid];
+    __syncthreads();
+    // Sort shared pool in the block by cost
+    sortArray(survivorPool, 32);
+    
+    __syncthreads();
+    // use best 2 individuals to crossover, results in p1
+/*    if (tid == 0) {
+        for (int i = 0; i < 32; i++) {
+            printf("%i - %f\n", i, survivorPool[i].cost);
+        }
+    }*/
+    if (survivorPool[0].cost < pool[tid].cost ) {
+        p1 = pool[0];
+        p2 = pool[1];
+        crossover(p1, p2, state, tid);
+        // store resulting new individual into global memory
+        pool[tid] = p1;
+    }
+    __syncthreads();
+
+}  
