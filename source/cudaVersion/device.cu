@@ -88,8 +88,6 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     // Copy results of the pool into host memory
     cudaMemcpy(h_pool, d_pool, poolMemSize, cudaMemcpyDeviceToHost);
 
-    recordSolution(h_pool, h_constants);
-
     // Free resources from device before ending function
     cudaFree(d_constants);
     cudaFree(d_pool);

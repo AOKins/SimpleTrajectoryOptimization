@@ -173,7 +173,6 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
 //        state - pointer array to be used in crossover for generating random numbers
 // Output: pool contains 
 __global__ void geneticAlgorithm(individual * pool, options * constants, curandState_t * state) {
-
     // Tid value for this thread in global memory
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     individual p1, p2;
@@ -202,9 +201,9 @@ __global__ void geneticAlgorithm(individual * pool, options * constants, curandS
 // Kernal to generate a copy of input but elements are shifted by 8
 // Input: input - original array of individuals
 //        output - outputted resulting array of invividuals containing copy form input but elements are shifted by 8
-// O
+// Output: output contains copy of input but with elements offset by 8
 __global__ void offsetCopy(individual * input, individual * output, options * constants) {
     int input_tid = threadIdx.x + blockIdx.x * blockDim.x;
-    int output_tid = (constants->pop_size + input_tid + 8) % constants->pop_size;
+    int output_tid = (input_tid + 8) % constants->pop_size;
     output[output_tid] = input[input_tid];
 }

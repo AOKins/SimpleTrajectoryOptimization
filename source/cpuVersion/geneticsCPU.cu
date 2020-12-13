@@ -94,27 +94,34 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
 // Method to handle the overall genetic algorithm behavior
 // Input: constants - values from config that contains information such as pop_size, distance_tol, etc. that need to be avaliable
 //        pool - pointer to array of individuals
+//        copy - pointer to array of copy of pool to draw survivorPool from instead of pool (to prevent contamination from previous calls)
 //        id - index value for the individual being performed in the genetic algorithm, this method chosen so it is similar to GPU version in comparing
 //        rng - the random number generator to use
 // Output: pool[id] contains possibly (if not a local best) new individual that needs to be evaluated for cost
-void geneticAlgorithmCPU(options * constants, individual * pool, int id, std::mt19937_64 & rng) {
+void geneticAlgorithmCPU(options * constants, individual * pool, individual * copy, int id, std::mt19937_64 & rng) {
     int blockID = id / 32; // Get what would be a 32 sized block of the pool that this individual is within 
     individual p1, p2;
 
     individual * survivorPool = new individual[32];
 
     for (int i = 0; i < 32; i++) {
-        survivorPool[i] = pool[blockID*32+i];
+        survivorPool[i] = copy[blockID*32+i];
     }
 
     std::sort(survivorPool, survivorPool+32);
 
-    if (survivorPool[0].cost < pool[id].cost) {
+    int output_id = (id + 32) % constants->pop_size;
+
+    if (survivorPool[0].cost < copy[id].cost) {
         p1 = pool[0];
         p2 = pool[1];
         crossoverCPU(p1, p2, rng);
-        pool[id] = p1;
+        pool[output_id] = p1;
     }
+    else {
+        pool[output_id] = copy[id];
+    }
+    delete [] survivorPool;
 }
 
 // Method for performing the search for a solution using a genetic algorithm and physics simulation
@@ -125,7 +132,9 @@ void callCPU(options * constants, individual * pool )
 {
 
     // Initialize performance file by calling it
-    initializeRecording();
+    // initializeRecording();
+    // Creating a temp array that is to contain a copy of a current generation to draw individuals from in geneticAlgorithm without contamination
+    individual * copy = new individual[constants->pop_size]; 
 
     // Create rng generator
     std::mt19937_64 rng(constants->rng_seed);
@@ -140,31 +149,33 @@ void callCPU(options * constants, individual * pool )
         // call simulate for each
         for (int i = 0; i < constants->pop_size; i++) {
             simulate(*constants, &pool[i]);
+
             if (pool[i].cost < constants->distance_tol) {
                 foundSolution = true;
             }
+            copy[i] = pool[i]; // Copy individual into temp
         }
+        
         // record best here!
-        recordGeneration(pool, constants, genCount);
+        // recordGeneration(pool, constants, genCount);
 
         // Every display frequency display onto the terminal using terminalDislay() method in output.cpp
-        if (genCount % constants->display_freq == 0) {
-            terminalDisplay(pool, constants, genCount);
-        }
+        // if (genCount % constants->display_freq == 0) {
+        //     terminalDisplay(pool, constants, genCount);
+        // }
 
         // if no solution, perform crossovers
         if (foundSolution == false)
         {
             // Perform crossover method for a given individual
             for (int i = 0; i < constants->pop_size; i++) {
-                geneticAlgorithmCPU(constants, pool, i, rng);                
+                geneticAlgorithmCPU(constants, pool, copy, i, rng);                
             }
         }
         genCount++;
-    } while (foundSolution == false && genCount < constants->max_generations);
     // while no solution and genCount < maxGen
+    } while (foundSolution == false && genCount < constants->max_generations);
 
-    std::cout << genCount << std::endl;
-
-
+    // Done, can deallocate copy
+    delete [] copy;
 }
