@@ -9,38 +9,23 @@
 
 // Resource for Odd-Even Transposition Sort - https://www.tutorialspoint.com/parallel_algorithm/parallel_algorithm_sorting.htm
 // Sort array
-template<typename T>
-__device__ void sortArray(T * array, int size) {
+template <typename T>
+__device__ void sortArray(T array[32]) {
+    int size = 32;
     __shared__ bool sorted;
     sorted = false;
     int id = threadIdx.x;
 
-    int leftID = (size + id-1) % size;
-    int rightID = (size + id+1) % size;
+    int leftID = id-1;
+    int rightID = id+1;
     __syncthreads();
-    //old = atomicCAS ( &addr, compare, value );  // old = *addr;  *addr = ((old == compare) ? value : old)
-    //atomicCAS(&address, the value that you want to compare, the value use are using to compare to)
-    /*
-    int atomicCAS (int *id, self.cost, left.cost)
-
-    { //make up keyword
-        __lock (id)
-        {
-            int old = *id;
-            *id = (old == self.cost) ? left.cost : old;
-            return old;
-        }
-    }
-    int atomicCAS (int *id, self.cost, right.cost)
-    */
     int i = 1;
-    while (!sorted && i <= 32*32)
+    while (!sorted && i <= size*size)
     {        
         // Assume sorted until otherwise (a swap was performed)
         sorted = true;
-        if (id > 0 && id < 31) {
+        if (id > 0 && id < size-1) {
             if (i % 2 == 0 && id % 2 == 0) {
-                //look more into atomicCAS
                 if (array[rightID] < array[id]) {
                     T temp = array[id];
                     array[id] = array[rightID];
@@ -193,29 +178,33 @@ __global__ void geneticAlgorithm(individual * pool, options * constants, curandS
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     individual p1, p2;
     // Copy itself into a shared memory pool
-    __shared__ individual * survivorPool; 
-    survivorPool = new individual[32];
+    __shared__ individual survivorPool[32]; 
     __syncthreads();
 
     survivorPool[threadIdx.x] = pool[tid];
     __syncthreads();
     // Sort shared pool in the block by cost
-    sortArray(survivorPool, 32);
+    sortArray(survivorPool);
     
     __syncthreads();
     // use best 2 individuals to crossover, results in p1
-/*    if (tid == 0) {
-        for (int i = 0; i < 32; i++) {
-            printf("%i - %f\n", i, survivorPool[i].cost);
-        }
-    }*/
     if (survivorPool[0].cost < pool[tid].cost ) {
-        p1 = pool[0];
-        p2 = pool[1];
-        crossover(p1, p2, state, tid);
+        p1 = survivorPool[0];
+        p2 = survivorPool[1];
+        //crossover(p1, p2, state, tid);
         // store resulting new individual into global memory
         pool[tid] = p1;
     }
     __syncthreads();
 
 }  
+
+// Kernal to generate a copy of input but elements are shifted by 8
+// Input: input - original array of individuals
+//        output - outputted resulting array of invividuals containing copy form input but elements are shifted by 8
+// O
+__global__ void offsetCopy(individual * input, individual * output, options * constants) {
+    int input_tid = threadIdx.x + blockIdx.x * blockDim.x;
+    int output_tid = (constants->pop_size + input_tid + 8) % constants->pop_size;
+    output[output_tid] = input[input_tid];
+}

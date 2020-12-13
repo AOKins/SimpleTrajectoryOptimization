@@ -98,22 +98,22 @@ void crossoverCPU(individual& parent1, individual& parent2, std::mt19937_64& rng
 //        rng - the random number generator to use
 // Output: pool[id] contains possibly (if not a local best) new individual that needs to be evaluated for cost
 void geneticAlgorithmCPU(options * constants, individual * pool, int id, std::mt19937_64 & rng) {
-    int leftIndex, rightIndex;
-    individual self, left, right;
-    self = pool[id];
-    leftIndex = (constants->pop_size + id-1) % constants->pop_size;
-    rightIndex = (constants->pop_size + id+1) % constants->pop_size;
-    
-    self = pool[id];
-    left = pool[leftIndex];
-    right = pool[rightIndex];
+    int blockID = id / 32; // Get what would be a 32 sized block of the pool that this individual is within 
+    individual p1, p2;
 
-    if (left.cost < self.cost) {
-        crossoverCPU(self, left, rng);
+    individual * survivorPool = new individual[32];
+
+    for (int i = 0; i < 32; i++) {
+        survivorPool[i] = pool[blockID*32+i];
     }
-    else if (right.cost < self.cost)
-    {
-        crossoverCPU(self, right, rng);
+
+    std::sort(survivorPool, survivorPool+32);
+
+    if (survivorPool[0].cost < pool[id].cost) {
+        p1 = pool[0];
+        p2 = pool[1];
+        crossoverCPU(p1, p2, rng);
+        pool[id] = p1;
     }
 }
 
@@ -166,6 +166,5 @@ void callCPU(options * constants, individual * pool )
 
     std::cout << genCount << std::endl;
 
-    recordSolution(pool, constants);
 
 }

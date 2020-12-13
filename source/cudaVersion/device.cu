@@ -27,6 +27,8 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     // Allocate and copy over memory into the device
     individual * d_pool;
     cudaMalloc(&d_pool, poolMemSize);
+    individual * d_offset_temp;
+    cudaMalloc(&d_offset_temp, poolMemSize);
     cudaMemcpy(d_pool, h_pool, poolMemSize, cudaMemcpyHostToDevice);
 
     // Allocate memory for constants object
@@ -71,6 +73,11 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
         if (*h_foundSolution == 0) {            // No solution found yet, create new generation
             geneticAlgorithm<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_constants, d_state);
             cudaDeviceSynchronize();
+            // Offset 16 to help diversify the pool
+            offsetCopy<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_offset_temp, d_constants);
+            cudaDeviceSynchronize();
+            offsetCopy<<<numBlocksUsed, numThreadsUsed>>>(d_offset_temp, d_pool, d_constants);
+            cudaDeviceSynchronize();
         }
 
         gen_count++;
@@ -86,6 +93,7 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     // Free resources from device before ending function
     cudaFree(d_constants);
     cudaFree(d_pool);
+    cudaFree(d_offset_temp);
     cudaFree(d_state);
     cudaFree(d_foundSolution);
     // Destroy cudaEvent objects

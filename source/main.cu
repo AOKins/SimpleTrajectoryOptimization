@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) { // main.exe input.config <- command to run pr
         callCPU(config, pool);
         end = clock();
     }
+    recordSolution(pool, config);
 
     time = (float(end) - float(start)) / float(CLOCKS_PER_SEC) * 1000.0;
 

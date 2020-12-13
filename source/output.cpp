@@ -53,7 +53,7 @@ void recordSolution(individual * pool, options * constants)
     // output the constants object into the text file first
     resultsFile << *constants << std::endl;
 
-    std::cout << "\nBest Final is " << pool[0].cost << std::endl;
+    std::cout << "\n Best Final is " << pool[0].cost << std::endl;
     std::cout << "Worst Final is " << pool[constants->pop_size-1].cost << std::endl;
 
     // Output all valid solutions to resultsFile
