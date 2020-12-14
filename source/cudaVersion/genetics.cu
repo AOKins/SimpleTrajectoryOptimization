@@ -5,26 +5,34 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
-// Put genetics CUDA code here
-
 // Resource for Odd-Even Transposition Sort - https://www.tutorialspoint.com/parallel_algorithm/parallel_algorithm_sorting.htm
 // Sort array
 template <typename T>
 __device__ void sortArray(T array[32]) {
+    // Size of array is taken as 32
     int size = 32;
+
+    // Shared boolean that is set to false initially
     __shared__ bool sorted;
     sorted = false;
+
+    // Id if the threadIdx.x (within a block)
     int id = threadIdx.x;
 
+    // indexes for elements left and right of this thread's
     int leftID = id-1;
     int rightID = id+1;
+    
     __syncthreads();
+    
     int i = 1;
     while (!sorted && i <= size*size)
     {        
         // Assume sorted until otherwise (a swap was performed)
         sorted = true;
+        // Ignore edge indexes/threads
         if (id > 0 && id < size-1) {
+            // Perform swaps if appriopriate thread and neighbors are out of order
             if (i % 2 == 0 && id % 2 == 0) {
                 if (array[rightID] < array[id]) {
                     T temp = array[id];
@@ -61,10 +69,10 @@ __device__ void sortArray(T array[32]) {
             }
             i++;    
         }
+        // Sync for this phase before going on to next
         __syncthreads();
     }
 }
-
 
 
 // Random Start
@@ -81,6 +89,11 @@ __device__ void randomStart(individual *pool, options &constants, curandState * 
     pool[tid] = individual(rand_phi, rand_theta, rand_V, rand_time);
 }
 
+
+// Setup teh pool and state arrays
+// Input: pool pointer, state pointer for arrays to store random individual and random generation state respectively
+//        constants for parameter limits in random initialization, foundSolution to be set to false
+// Output: foundSolution = false, pool contains random generations to test, state is initialized
 __global__ void initializeRandom(individual * pool, curandState_t *state, options *constants, int * foundSolution)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -101,17 +114,20 @@ __device__ void maskGenGPU(int * mask, curandState_t * state, int tid) {
     mask[3] = curand(&state[tid]) % 3 + 1;
 }
 
-// Crossover
-// crossover(pool[tid], pool[tid-1], constants)
+// Crossover between two individuals to create new individual, stored in parent1
+// Input: parent1, parent2 - individuals to crossover
+//        state - pointer to array (pop_size in length) for random mask generation
+//        tid - global thread id used for accessing state element in state in mask generation
+// Output; parent1 is now a new individual as a resulting combination of previous parent1 and parent2
 __device__ void crossover(individual & parent1, individual & parent2, curandState_t * state, int tid)
 {
     // Generate a mask to decide which genes get crossed over
     int * mask = new int[4];
-    
     maskGenGPU(mask, state, tid);
     // Crossing over phi
     switch (mask[0]) 
     {
+        // 1 - take from parent 1 (which is already in parent1)
         case (1) :
             parent1.phi = parent1.phi;
             break;
@@ -126,6 +142,7 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
     // Crossing over theta
     switch (mask[1])
     {
+        // 1 - take from parent 1 (which is already in parent1)
         case (1) :
             parent1.theta = parent1.theta;
             break;
@@ -140,6 +157,7 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
     // Crossing over V_nought
     switch (mask[2])
     {
+        // 1 - take from parent 1 (which is already in parent1)
         case (1) :
             parent1.V_nought = parent1.V_nought;
             break;
@@ -153,6 +171,7 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
 
     switch (mask[3])
     {
+        // 1 - take from parent 1 (which is already in parent1)
         case (1) :
             parent1.time = parent1.time;
             break;
@@ -171,7 +190,7 @@ __device__ void crossover(individual & parent1, individual & parent2, curandStat
 // Input: pool - individual array in global memory, assumed to not have a solution and is not ordered
 //        constants - contains constant values to use such as pop_size, etc.
 //        state - pointer array to be used in crossover for generating random numbers
-// Output: pool contains 
+// Output: pool contains a new batch of individuals that should be run in simulate to determine possible solutions
 __global__ void geneticAlgorithm(individual * pool, options * constants, curandState_t * state) {
     // Tid value for this thread in global memory
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
@@ -190,7 +209,7 @@ __global__ void geneticAlgorithm(individual * pool, options * constants, curandS
     if (survivorPool[0].cost < pool[tid].cost ) {
         p1 = survivorPool[0];
         p2 = survivorPool[1];
-        //crossover(p1, p2, state, tid);
+        crossover(p1, p2, state, tid);
         // store resulting new individual into global memory
         pool[tid] = p1;
     }
@@ -203,7 +222,10 @@ __global__ void geneticAlgorithm(individual * pool, options * constants, curandS
 //        output - outputted resulting array of invividuals containing copy form input but elements are shifted by 8
 // Output: output contains copy of input but with elements offset by 8
 __global__ void offsetCopy(individual * input, individual * output, options * constants) {
+    // Get global id
     int input_tid = threadIdx.x + blockIdx.x * blockDim.x;
+    // Set the output id as global + 8 with wrap around
     int output_tid = (input_tid + 8) % constants->pop_size;
+    // Copy from input to output using generated tid values
     output[output_tid] = input[input_tid];
 }

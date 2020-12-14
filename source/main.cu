@@ -17,21 +17,24 @@ int main(int argc, char *argv[]) { // main.exe input.config <- command to run pr
     clock_t start,end;
     // Determine whether to use cuda version of algorithm or cpu only verison
     if (config->useCUDA == true) {
-        std::cout << "\n\t\tUSING CUDA\n";
+        std::cout << "-Using CUDA-\n";
         // Perform version that utilizes CUDA
+        // Not using cuda events, as exact same record method ought to be most fair to the CPU only's performance
         start = clock();
         callGPU(pool, config);
         end = clock();
     }
-    else {        std::cout << "\n\tNOT\n";
-
+    else {
+        std::cout << "-Using CPU ONLY-\n";
         // Perform CPU only version
         start = clock();
         callCPU(config, pool);
         end = clock();
     }
+    // Output config and any valid solutions (within distance_tol)
     recordSolution(pool, config);
 
+    // Take time for the function being used
     time = (float(end) - float(start)) / float(CLOCKS_PER_SEC) * 1000.0;
 
     std::cout << "Time it took was " << time << " milliseconds\n";

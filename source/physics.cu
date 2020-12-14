@@ -2,6 +2,11 @@
 #define _PHYSICS_CPP_
 // Functions that handle simulating trajectory on device called from kernal
 
+// Determine the acceleration due the atmospher on the obejct due to drag and wind
+// Input: constants for physics contants
+//        objectPos for current position of the object (currently unused but would be for possibly more complex atmospher simulations)
+//        objectVel for current velocity used in deriving the force due to drag/wind that depends on the objects velocity
+// Output: returns resulting acceleration in 3D coordinates system
 __host__ __device__ data3D calculateAtmosphere( options &constants, data3D objectPos, data3D objectVel) {
     data3D result;
     data3D netSpeed;
@@ -17,12 +22,19 @@ __host__ __device__ data3D calculateAtmosphere( options &constants, data3D objec
     return result;
 }
 
+// Determine the acceleration due to gravity on the obejct (currently just constant)
+// Input: constants for physics contants
+//        objectPos for current position of the object (currently unused but would be used for altitude consideration)
+// Output: returns resulting acceleration in 3D coordinates system
 __host__ __device__ data3D calculateGravity(options &constants, data3D objectPos) {
     data3D result; // default constructor sets all 3 components initially to 0
     result.z = -constants.gravityAccel;
     return result;
 }
 
+// Perform a step of the simulation
+// Input: constants - access to physics constants needed and step-size
+// Output: object is updated in its simulation by one step size
 __host__ __device__ void update(options &constants, individual & object) {
     data3D atm_accel = calculateAtmosphere(constants, object.position, object.velocity);
     data3D grav_accel = calculateGravity(constants, object.position);
@@ -43,18 +55,30 @@ __host__ __device__ void update(options &constants, individual & object) {
     object.velocity.z = object.velocity.z + net_accelZ*constants.time_stepSize;
 }
 
+// Kernal for performaing simulate across all individuals
+// Input: constants - contains constant values needed such as pop_size or physics properties
+//        pool - array of individuals to be simulated
+//        foundSolution - integer that indicates valid solutions, assumed to be 0
+// Output: pool[tid] has cost associated with the parameters
 __global__ void simulateGPU(options * constants, individual *pool, int *foundSolution) {
+    // Derive id to access appriopriate individual and copy into local memory
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     individual lcl_ind = pool[tid];
+    // Also copy constants to local memory
     options lcl_constants = *constants;
+    // Reset the initial position (or atleast be sure) to 0,0,0
+    lcl_ind.position.x = 0;
+    lcl_ind.position.y = 0;
+    lcl_ind.position.z = 0;
 
-    // Iterate for each time step until the total triptime is reached
+    // Iterate for each time step until the total triptime is reached/exceded
     for (double c_time = 0; c_time < lcl_ind.time; c_time += lcl_constants.time_stepSize) {
         update(lcl_constants, lcl_ind);
     }
     // Trajectory completed, evaluate cost
     lcl_ind.determineCost(lcl_constants.target_Loc);
 
+    // Store resulting cost to global individual and also set foundSolution to 1 if this individual is a valid solution
     pool[tid].cost = lcl_ind.cost;
     if (lcl_ind.cost < lcl_constants.distance_tol) {
         (*foundSolution) = 1;
@@ -67,6 +91,7 @@ __global__ void simulateGPU(options * constants, individual *pool, int *foundSol
 //        object - the individual that contains the parameters to simulate the trajector (angles, V_nought, and total trip time)
 // Output: object contains cost for how close it is to the target and final position starting from 0,0,0 
 __host__ void simulate(options constants, individual * object) {
+    // Reset the initial position (or atleast be sure) to 0,0,0
     object->position.x = 0;
     object->position.y = 0;
     object->position.z = 0;

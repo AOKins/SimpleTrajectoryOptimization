@@ -6,6 +6,8 @@
 #include <math.h>
 
 // Constructor that takes in a string to where to find the file to read
+// Input is string to where the file is to read from
+// Output is options struct is initialized
 options::options(std::string filePath) {
     options::readFile(filePath);
 }
@@ -105,9 +107,11 @@ void options::readFile(std::string filePath) {
                         this->rng_seed = time(0);
                     }
                 }
+                else if (variableName == "num_threads_per") {
+                    this->num_threads_per = std::stoi(variableValue);
+                }
                 else if (variableName == "num_blocks") {
                     this->num_blocks = std::stoi(variableValue);
-                    this->pop_size = 32*this->num_blocks; // 32 for warp size
                 }
                 else {
                     // If none of the if cases were matches, then this is some unknown variable in the config file and output this to the terminal
@@ -120,6 +124,8 @@ void options::readFile(std::string filePath) {
         std::cout << "Unable to open " + filePath + " file!\n";
     }
 
+    // Determine derived values
+    this->pop_size = this->num_threads_per*this->num_blocks;
     // Now got values, set derived ones now for wind in 3D components as opposed to direction/magnitude
     this->windcomponents.x = windSpeedmagnitude * cos(this->windDirection);
     this->windcomponents.y = windSpeedmagnitude * sin(this->windDirection);
@@ -131,18 +137,20 @@ std::ostream& operator<<(std::ostream& os, const options object) {
     os << std::setprecision(6);
     os << "\n========Current Settings========\n";
     os << "Target Location Data\n";
-    os << "\tX: " << object.target_Loc.x << " m\tY: " << object.target_Loc.y << " m\tZ: " << object.target_Loc.z << " m\n";
+    os << "\tX: " << object.target_Loc.x << "m\n\tY: " << object.target_Loc.y << "m\n\tZ: " << object.target_Loc.z << "m\n";
     os << "Environment Conditions\n";
-    os << "\twindSpeed: " << object.windDirection << "m/s\twindDirection " << object.windDirection << " radians" << "\tAir Density: " << object.atmosphericDensity << "\n";
+    os << "\twindSpeed: " << object.windDirection << "m/s\n\twindDirection " << object.windDirection << " rads" << "\n\tAir Density: " << object.atmosphericDensity << "kg/m^3\n";
     os << "\tGravity: " << object.gravityAccel << "m/s^2\n";
-    os << "\tWind Direction (X,Y,Z): " << object.windcomponents.x << " " << object.windcomponents.y << " " << object.windcomponents.z << "\n";
     os << "Projectile Characteristics\n";
-    os << "\tMass: " << object.obj_mass << " kg" << "\tDrag: " << object.obj_dragCoeff << "\tCross-Sectional Area: " << object.obj_area << "\n";
-    os << "\tTime Range: " << object.min_time << " - " << object.max_time << std::endl; 
-    os << "\tV_nought Range: " << object.min_launch_v << " - " << object.max_launch_v << std::endl;
+    os << "\tMass: " << object.obj_mass << " kg" << "\n\tDrag: " << object.obj_dragCoeff << "\n\tCross-Sectional Area: " << object.obj_area << "m^2\n";
+    os << "\tTime Range (s): " << object.min_time << " - " << object.max_time << std::endl; 
+    os << "\tV_nought Range (m/s): " << object.min_launch_v << " - " << object.max_launch_v << std::endl;
     os << "Simulation Settings\n";
-    os << "\tTime Step Size: " << object.time_stepSize << " s\tDistance Tolerance: " << object.distance_tol << " m\n";
+    os << "\tTime Step Size: " << object.time_stepSize << "s\n\tDistance Tolerance: " << object.distance_tol << "m\n";
     os << "\tRNG Seed: " << object.rng_seed << std::endl;
-    os << "\tPopulation Size: " << object.pop_size << "\tMax_generations: " << object.max_generations << std::endl;
+    os << "\tPopulation Size: " << object.pop_size << "\n\tMax_generations: " << object.max_generations << std::endl;
+    os << "CUDA Settings\n";
+    os << "\tThreads Per Block: " << object.num_threads_per << "\n\tBlocks: " << object.num_blocks << std::endl;
+
     return os;
 }

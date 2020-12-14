@@ -11,15 +11,10 @@
 //        h_constants - pointer to options struct that contains the constants needed related to the program
 // Output: h_pool may contain individuals with valid solutions to hitting the target
 __host__ void callGPU(individual * h_pool, options * h_constants) {
-    // Get properties of the gpu to display and also so we could use the maxThreadsPerBlock property
-    cudaDeviceProp * properties = new cudaDeviceProp;
-    cudaGetDeviceProperties(properties,0);
-    std::cout <<"GPU Properties (" << properties->name << " detected)\n";
-    int numThreadsUsed = 32;
-    std::cout << "\tThreads used: " << numThreadsUsed << "\n"; 
-    // Holds how many blocks to use for the kernal to cover the entire pool, assuming that pop_size is divisible by maxThreadsPerBlock
-    int numBlocksUsed = h_constants->pop_size / numThreadsUsed;
-    std::cout << "\tBlocks being used: " << numBlocksUsed << "\n";
+    // Get how many threads and blocks to use
+    int numThreadsUsed = h_constants->num_threads_per;
+    // Holds how many blocks to use for the kernal to cover the entire pool, assuming that pop_size is equal to num_blocks * numThreads
+    int numBlocksUsed = h_constants->num_blocks;
 
     // Store the number of bytes the pool array is and use when managing memory for CUDA
     size_t poolMemSize = sizeof(individual)*h_constants->pop_size;
@@ -27,9 +22,10 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     // Allocate and copy over memory into the device
     individual * d_pool;
     cudaMalloc(&d_pool, poolMemSize);
+    cudaMemcpy(d_pool, h_pool, poolMemSize, cudaMemcpyHostToDevice);
+
     individual * d_offset_temp;
     cudaMalloc(&d_offset_temp, poolMemSize);
-    cudaMemcpy(d_pool, h_pool, poolMemSize, cudaMemcpyHostToDevice);
 
     // Allocate memory for constants object
     options * d_constants;
@@ -46,21 +42,11 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaMalloc(&d_foundSolution, sizeof(int));
     cudaMemcpy(d_constants, h_foundSolution, sizeof(int), cudaMemcpyHostToDevice);
 
-    // Create and use cudaEvents to sync with and record the outcome
-    cudaEvent_t start, end;
-    cudaEvent_t endSimulation, endGenetics, startSimulate;
-    cudaEventCreate(&start);
-    cudaEventCreate(&startSimulate);
-    cudaEventCreate(&endSimulation);
-    cudaEventCreate(&endGenetics);
-    cudaEventCreate(&end);
-
-    cudaEventRecord(start);
     // Initialize the random number generator into state
     initializeRandom<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_state, d_constants, d_foundSolution);
     cudaDeviceSynchronize();
-    // At this point all initialization is finished
 
+    // At this point all initialization is finished
     int gen_count = 0;
     do {
         // Perform the algorithm
@@ -68,22 +54,23 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
         cudaDeviceSynchronize();
         // At this point all the simulations are finished including setting costs and found solution determined
 
-        // Copy this boolean to see if a solution was reached
+        // Copy foundSolution to see if a solution was reached
         cudaMemcpy(h_foundSolution, d_foundSolution, sizeof(int), cudaMemcpyDeviceToHost);
+
         if (*h_foundSolution == 0) {            // No solution found yet, create new generation
             geneticAlgorithm<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_constants, d_state);
             cudaDeviceSynchronize();
-            // Offset 16 to help diversify the pool
+
+            // Offset 16 to help diversify the pool, done by calling offsetCopy twice (offset 8 each) to ensure no race condition across all threads
             offsetCopy<<<numBlocksUsed, numThreadsUsed>>>(d_pool, d_offset_temp, d_constants);
             cudaDeviceSynchronize();
             offsetCopy<<<numBlocksUsed, numThreadsUsed>>>(d_offset_temp, d_pool, d_constants);
             cudaDeviceSynchronize();
         }
 
-        gen_count++;
+        gen_count++; // Increment gen_count for next generation
     } while (*h_foundSolution == 0 && gen_count < h_constants->max_generations); // continue loop until solution found or max generations reached
     // End of algorithm
-    cudaEventRecord(end);
 
     // Copy results of the pool into host memory
     cudaMemcpy(h_pool, d_pool, poolMemSize, cudaMemcpyDeviceToHost);
@@ -94,13 +81,7 @@ __host__ void callGPU(individual * h_pool, options * h_constants) {
     cudaFree(d_offset_temp);
     cudaFree(d_state);
     cudaFree(d_foundSolution);
-    // Destroy cudaEvent objects
-    cudaEventDestroy(start);
-    cudaEventDestroy(startSimulate);
-    cudaEventDestroy(endSimulation);
-    cudaEventDestroy(endGenetics);
-    cudaEventDestroy(end);
+
     // Deallocate host memory
     delete h_foundSolution;
-    // Return how long the algorithm took (ignoring starting allocation/copy)
 }

@@ -67,7 +67,12 @@ void recordSolution(individual * pool, options * constants)
     resultsFile.close();
 }
 
+// Function for outputting generational data on the terminal
+// Input: pool array and constants for getting individual data
+//        genCount for how many generations have been performed
+// Output: outputs genCount and best individual's cost (smallest) to the terminal
 void terminalDisplay(individual * pool, options * constants, int genCount) {
+    // Create a copied array to not impact the pool's ordering
     individual * sortedPool = new individual[constants->pop_size];
     for (int i = 0; i < constants->pop_size; i++) {
         sortedPool[i] = pool[i];
@@ -75,6 +80,9 @@ void terminalDisplay(individual * pool, options * constants, int genCount) {
     // Sort the copied array
     std::sort(sortedPool, sortedPool + constants->pop_size);
 
+    // Output onto the terminal the generation and best individual's cost
     std::cout << "\nGeneration: " << genCount << std::endl;
     std::cout << "\t Best Individual Cost: " << sortedPool[0].cost << std::endl;
+
+    delete [] sortedPool;
 }

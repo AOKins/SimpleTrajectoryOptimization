@@ -102,14 +102,18 @@ void geneticAlgorithmCPU(options * constants, individual * pool, individual * co
     int blockID = id / 32; // Get what would be a 32 sized block of the pool that this individual is within 
     individual p1, p2;
 
+    // Create local survivor pool that would be same kind of grouping as CUDA version with 32 individuals within a block
     individual * survivorPool = new individual[32];
 
+    // Copy each individual within the block to survivorPool
     for (int i = 0; i < 32; i++) {
         survivorPool[i] = copy[blockID*32+i];
     }
 
+    // Sort the pool
     std::sort(survivorPool, survivorPool+32);
-
+    
+    // Determine what the outputted location should be
     int output_id = (id + 32) % constants->pop_size;
 
     if (survivorPool[0].cost < copy[id].cost) {
@@ -156,10 +160,11 @@ void callCPU(options * constants, individual * pool )
             copy[i] = pool[i]; // Copy individual into temp
         }
         
-        // record best here!
+        // record best here! commented out for more fair performance comparison with GPU
         // recordGeneration(pool, constants, genCount);
 
         // Every display frequency display onto the terminal using terminalDislay() method in output.cpp
+        // Commented out for more fair performance comparison with GPU
         // if (genCount % constants->display_freq == 0) {
         //     terminalDisplay(pool, constants, genCount);
         // }
@@ -176,6 +181,6 @@ void callCPU(options * constants, individual * pool )
     // while no solution and genCount < maxGen
     } while (foundSolution == false && genCount < constants->max_generations);
 
-    // Done, can deallocate copy
+    // Done by either finding a solution or exceeding number of generations, can deallocate copy and end function
     delete [] copy;
 }
